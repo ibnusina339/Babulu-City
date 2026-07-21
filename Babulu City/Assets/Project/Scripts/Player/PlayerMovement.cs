@@ -3,23 +3,29 @@ using UnityEngine.InputSystem;
 
 public class PlayerMovement : MonoBehaviour
 {
-    // Start is called once before the first execution of Update after the MonoBehaviour is created
-    [SerializeField] private float movespeed = 5f;
+    [SerializeField] private float moveSpeed = 5f;
+
     private Rigidbody2D rb;
     private Vector2 movement;
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
     }
 
-    // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        rb.linearVelocity = movement * movespeed;
+        rb.linearVelocity = movement * moveSpeed;
     }
 
     public void Move(InputAction.CallbackContext context)
     {
         movement = context.ReadValue<Vector2>();
+    }
+
+    public void StopMovement()
+    {
+        movement = Vector2.zero;
+        rb.linearVelocity = Vector2.zero;
     }
 }
