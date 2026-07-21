@@ -917,7 +917,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1697008257
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1237,19 +1237,19 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_ActionId
-      value: 0d15a955-9c5f-4508-86b6-39d6774c6e0c
+      value: 6b430144-8cf3-48b2-a3b7-ca2f1df58a2d
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[2].m_ActionId
-      value: 034f817f-ff42-43ba-89fd-cf0ead1a7cd3
+      value: 8a468ca5-ce50-4d0a-8e32-0f186a2dfe4a
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_ActionName
-      value: 'PlayerInput/Interact[/Keyboard/e]'
+      value: 'Player Interact/Interact[/Keyboard/e]'
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[2].m_ActionName
-      value: 'PlayerInput/Cancel[/Keyboard/escape]'
+      value: 'Player Interact/Cancel[/Keyboard/escape]'
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_PersistentCalls.m_Calls.Array.size
