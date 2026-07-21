@@ -1237,11 +1237,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_ActionId
-      value: 7999f227-4f4c-4502-8d9d-1a2f90c637c3
+      value: 0d15a955-9c5f-4508-86b6-39d6774c6e0c
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[2].m_ActionId
-      value: d68a8bc2-ac22-46f4-9c5c-1d12076311eb
+      value: 034f817f-ff42-43ba-89fd-cf0ead1a7cd3
       objectReference: {fileID: 0}
     - target: {fileID: 4881982798858745940, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
       propertyPath: m_ActionEvents.Array.data[1].m_ActionName
