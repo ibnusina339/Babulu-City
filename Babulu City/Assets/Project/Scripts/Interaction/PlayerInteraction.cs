@@ -4,13 +4,22 @@ using UnityEngine.InputSystem;
 public class PlayerInteraction : MonoBehaviour
 {
     private IInteractable currentInteractable;
+    private bool isInteracting;
 
     public void Interact(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
 
-        currentInteractable?.Interact();
+        if (isInteracting)
+            return;
+
+        if (currentInteractable == null)
+            return;
+
+        isInteracting = true;
+        currentInteractable.Interact();
+        isInteracting = false;
     }
 
     private void OnTriggerEnter2D(Collider2D other)
