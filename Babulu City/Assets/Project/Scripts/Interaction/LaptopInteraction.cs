@@ -6,6 +6,9 @@ using UnityEngine.InputSystem;
 public class LaptopInteraction : MonoBehaviour, IInteractable
 {
     public GameObject laptopUI;
+    
+    [SerializeField] private CursorManager cursorManager;
+    [SerializeField] private PlayerInput playerInput;
 
     [Header("Camera")]
     public CinemachineCamera playerCamera;
@@ -59,6 +62,10 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
             yield break;
 
         laptopUI.SetActive(true);
+        
+        playerInput.SwitchCurrentActionMap("Laptop");
+
+        cursorManager.EnableCursor();
     }
 
     public void CloseLaptop()
@@ -78,5 +85,9 @@ public class LaptopInteraction : MonoBehaviour, IInteractable
         laptopCamera.Priority = 0;
 
         playerMovement.enabled = true;
+        
+        playerInput.SwitchCurrentActionMap("Gameplay");
+
+        cursorManager.DisableCursor();
     }
 }
