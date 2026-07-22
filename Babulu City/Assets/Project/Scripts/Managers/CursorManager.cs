@@ -7,6 +7,11 @@ public class CursorManager : MonoBehaviour
 
     private bool activeCursor;
 
+    void Start()
+    {
+        virtualCursor.gameObject.SetActive(false);
+    }
+
     public void EnableCursor()
     {
         activeCursor = true;

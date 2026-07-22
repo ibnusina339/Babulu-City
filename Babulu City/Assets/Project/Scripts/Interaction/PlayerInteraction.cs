@@ -5,6 +5,8 @@ public class PlayerInteraction : MonoBehaviour
 {
     private IInteractable currentInteractable;
     private bool isInteracting;
+    
+    
 
     public void Interact(InputAction.CallbackContext context)
     {
@@ -14,6 +16,7 @@ public class PlayerInteraction : MonoBehaviour
         if (isInteracting)
             return;
 
+        
         if (currentInteractable == null)
             return;
 
