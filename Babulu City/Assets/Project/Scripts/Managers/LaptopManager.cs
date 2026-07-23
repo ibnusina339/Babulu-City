@@ -1,30 +1,36 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using Unity.Cinemachine;
 
 public class LaptopManager : MonoBehaviour
 {
     [Header("Windows")]
     [SerializeField] private GameObject desktop;
     [SerializeField] private GameObject ebookWindow;
-
-    [Header("Icons")]
-    [SerializeField] private GameObject EBook;
-
-    [Header("Cursor")]
-    [SerializeField] private CursorManager cursorManager;
-
+    
     [Header("Player")]
     [SerializeField] private PlayerMovement playerMovement;
-
     [SerializeField] private PlayerInput playerInput;
 
+    [Header("Cinemachine")]
+    [SerializeField] private CinemachineCamera playerCam;
+    [SerializeField] private CinemachineCamera laptopCam;
+    [SerializeField] private CinemachineBrain cinemachineBrain;
+    [SerializeField] private int activePriority = 20;
+    [SerializeField] private int inactivePriority = 0;
+
     private bool laptopOpened;
+    private Coroutine showDesktopCoroutine;
 
     private void Start()
     {
         desktop.SetActive(false);
         ebookWindow.SetActive(false);
+
+        SetCameraPriority(laptopCam, inactivePriority);
+        SetCameraPriority(playerCam, activePriority);
     }
 
     public void OpenLaptop()
@@ -32,12 +38,31 @@ public class LaptopManager : MonoBehaviour
         playerInput.SwitchCurrentActionMap("UI");
         laptopOpened = true;
 
-        desktop.SetActive(true);
-        EBook.SetActive(true);
-
-        cursorManager.EnableCursor();
-
         playerMovement.StopMovement();
+
+        SetCameraPriority(laptopCam, activePriority);
+        SetCameraPriority(playerCam, inactivePriority);
+
+        if (showDesktopCoroutine != null)
+            StopCoroutine(showDesktopCoroutine);
+
+        showDesktopCoroutine = StartCoroutine(ShowDesktopWhenBlendDone());
+    }
+
+    private IEnumerator ShowDesktopWhenBlendDone()
+    {
+        // Tunggu satu frame dulu, supaya Brain sempat mendeteksi perubahan Priority
+        // dan mulai proses blending sebelum kita cek IsBlending
+        yield return null;
+
+        // Selama Brain masih dalam proses blend menuju laptopCam, terus tunggu
+        while (cinemachineBrain != null && cinemachineBrain.IsBlending)
+        {
+            yield return null;
+        }
+
+        desktop.SetActive(true);
+        showDesktopCoroutine = null;
     }
 
     public void CloseLaptop()
@@ -45,12 +70,19 @@ public class LaptopManager : MonoBehaviour
         playerInput.SwitchCurrentActionMap("Player");
         laptopOpened = false;
 
+        if (showDesktopCoroutine != null)
+        {
+            StopCoroutine(showDesktopCoroutine);
+            showDesktopCoroutine = null;
+        }
+
         desktop.SetActive(false);
         ebookWindow.SetActive(false);
 
-        cursorManager.DisableCursor();
-
         playerMovement.ResumeMovement();
+
+        SetCameraPriority(laptopCam, inactivePriority);
+        SetCameraPriority(playerCam, activePriority);
     }
 
     public void OpenEbook()
@@ -63,7 +95,6 @@ public class LaptopManager : MonoBehaviour
         ebookWindow.SetActive(false);
     }
 
-    // Dipakai untuk tombol Esc, di-bind di action map "UI"
     public void Cancel(InputAction.CallbackContext context)
     {
         if (!context.performed)
@@ -72,22 +103,17 @@ public class LaptopManager : MonoBehaviour
         HandleClose();
     }
 
-    // Dipakai untuk tombol E, juga di-bind di action map "UI"
-    // Supaya E berfungsi menutup laptop/ebook saat laptop sudah terbuka
     public void Interact(InputAction.CallbackContext context)
     {
         if (!context.performed)
             return;
 
-        // Kalau laptop belum terbuka, tombol ini yang membuka laptop
-        // (dipanggil dari trigger/interact di dunia game, action map "Player")
         if (!laptopOpened)
         {
             OpenLaptop();
             return;
         }
 
-        // Kalau laptop sudah terbuka, tombol E berfungsi sama seperti Esc
         HandleClose();
     }
 
@@ -96,14 +122,20 @@ public class LaptopManager : MonoBehaviour
         if (!laptopOpened)
             return;
 
-        // Prioritas: tutup window dulu
         if (ebookWindow.activeSelf)
         {
             CloseEbook();
             return;
         }
 
-        // Kalau tidak ada window yang terbuka, tutup laptop
         CloseLaptop();
+    }
+
+    private void SetCameraPriority(CinemachineCamera cam, int priority)
+    {
+        if (cam == null)
+            return;
+
+        cam.Priority = priority;
     }
 }
