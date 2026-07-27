@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
   m_Name: Pitch Startup
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: 
-  displayName: 
-  slotType: 0
+  cardId: CF_PitchStartup
+  displayName: Pitch Startup
+  slotType: 3
   icon: {fileID: 0}
-  promptFragment: 
+  promptFragment: pitch startup
   affinityCards: []
   conflictCards: []

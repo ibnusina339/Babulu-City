@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
   m_Name: Playfull & Ceria
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: 
-  displayName: 
-  slotType: 0
+  cardId: Style_PlayfullCeria
+  displayName: Playfull & Ceria
+  slotType: 4
   icon: {fileID: 0}
-  promptFragment: 
+  promptFragment: playfull dan ceria
   affinityCards: []
   conflictCards: []

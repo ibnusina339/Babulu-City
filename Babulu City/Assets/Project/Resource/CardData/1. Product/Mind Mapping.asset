@@ -10,12 +10,12 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
-  m_Name: Videografer
+  m_Name: Mind Mapping
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: 
-  displayName: 
+  cardId: Product_MindMapping
+  displayName: Mini Mapping
   slotType: 0
   icon: {fileID: 0}
-  promptFragment: 
+  promptFragment: Mind Mapping
   affinityCards: []
   conflictCards: []

@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
   m_Name: Penyusunan Surat
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: 
-  displayName: 
-  slotType: 0
+  cardId: Product_PenyusunanSurat
+  displayName: Penyusunan Surat
+  slotType: 1
   icon: {fileID: 0}
-  promptFragment: 
+  promptFragment: penyusunan surat
   affinityCards: []
   conflictCards: []
