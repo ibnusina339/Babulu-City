@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
   m_Name: Presentasi
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: Purpose_Ex1A1B
-  displayName: Ex1A1B
+  cardId: Purpose_Presentasi
+  displayName: Presentasi
   slotType: 1
   icon: {fileID: 0}
-  promptFragment: Ex1A1B
+  promptFragment: presentasi
   affinityCards: []
   conflictCards: []

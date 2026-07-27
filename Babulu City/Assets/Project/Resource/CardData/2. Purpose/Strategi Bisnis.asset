@@ -12,10 +12,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
   m_Name: Strategi Bisnis
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: Purpose_Ex2A3B
-  displayName: Ex2A3B
+  cardId: Purpose_StrategiBisnis
+  displayName: Strategi Bisnis
   slotType: 1
   icon: {fileID: 0}
-  promptFragment: Ex2A3B
+  promptFragment: strategi bisnis
   affinityCards: []
   conflictCards: []
