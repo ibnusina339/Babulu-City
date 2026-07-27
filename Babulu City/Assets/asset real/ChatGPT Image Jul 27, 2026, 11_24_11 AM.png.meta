@@ -1,10 +1,10 @@
 fileFormatVersion: 2
-guid: 08ef027035c90da4683260943528725c
+guid: a32deb625b7ef084f9964ce715c340d4
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -6574452492598237238
-    second: New Piskel (12)_0
+      213: -3569137150510488522
+    second: ChatGPT Image Jul 27, 2026, 11_24_11 AM_0
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -113,13 +113,13 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: New Piskel (12)_0
+      name: ChatGPT Image Jul 27, 2026, 11_24_11 AM_0
       rect:
         serializedVersion: 2
-        x: 23
-        y: 31
-        width: 86
-        height: 76
+        x: 0
+        y: 0
+        width: 1536
+        height: 1024
       alignment: 0
       pivot: {x: 0, y: 0}
       border: {x: 0, y: 0, z: 0, w: 0}
@@ -128,8 +128,8 @@ TextureImporter:
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: ac7200a7a4ad2c4a0800000000000000
-      internalID: -6574452492598237238
+      spriteID: 6342c25fba0e77ec0800000000000000
+      internalID: -3569137150510488522
       vertices: []
       indices: 
       edges: []
@@ -148,7 +148,7 @@ TextureImporter:
     spriteCustomMetadata:
       entries: []
     nameFileIdTable:
-      New Piskel (12)_0: -6574452492598237238
+      ChatGPT Image Jul 27, 2026, 11_24_11 AM_0: -3569137150510488522
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
