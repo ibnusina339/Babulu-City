@@ -47,6 +47,18 @@ TagManager:
   - name: dinding
     uniqueID: 4159143397
     locked: 0
+  - name: furniture0
+    uniqueID: 2781842497
+    locked: 0
+  - name: furniture
+    uniqueID: 1440820335
+    locked: 0
+  - name: furniture2
+    uniqueID: 1084252005
+    locked: 0
+  - name: furniture3
+    uniqueID: 3394503381
+    locked: 0
   - name: player
     uniqueID: 1214250855
     locked: 0
