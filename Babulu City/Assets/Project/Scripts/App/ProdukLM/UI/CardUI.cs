@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -10,6 +11,7 @@ namespace ProdukLM
     public class CardUI : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
     {
         public CardData data;
+        public TMP_Text nameText; // drag child 'NameText' ke sini di prefab
 
         CanvasGroup canvasGroup;
         RectTransform rect;
@@ -22,6 +24,14 @@ namespace ProdukLM
             canvasGroup = GetComponent<CanvasGroup>();
             rect = GetComponent<RectTransform>();
             rootCanvas = GetComponentInParent<Canvas>();
+        }
+
+        // Dipanggil CardLibraryManager tiap kartu baru di-spawn
+        public void SetData(CardData card)
+        {
+            data = card;
+            if (nameText != null)
+                nameText.text = card.displayName;
         }
 
         public void OnBeginDrag(PointerEventData eventData)

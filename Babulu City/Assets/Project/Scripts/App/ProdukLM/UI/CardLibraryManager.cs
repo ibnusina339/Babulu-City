@@ -36,8 +36,7 @@ namespace ProdukLM
             foreach (var card in relevantCards)
             {
                 var instance = Instantiate(cardPrefab, cardContainer);
-                instance.data = card;
-                // TODO: set icon/text di prefab dari card.icon dan card.displayName
+                instance.SetData(card);
             }
         }
     }
