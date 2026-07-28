@@ -267,7 +267,6 @@ GameObject:
   - component: {fileID: 39161974}
   - component: {fileID: 39161973}
   - component: {fileID: 39161972}
-  - component: {fileID: 39161971}
   m_Layer: 5
   m_Name: Digital Planner
   m_TagString: Untagged
@@ -275,21 +274,6 @@ GameObject:
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!114 &39161971
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 39161970}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &39161972
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1123,7 +1107,6 @@ GameObject:
   - component: {fileID: 630908357}
   - component: {fileID: 630908356}
   - component: {fileID: 630908355}
-  - component: {fileID: 630908354}
   m_Layer: 5
   m_Name: Infografis
   m_TagString: Untagged
@@ -1151,21 +1134,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &630908354
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 630908352}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &630908355
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2324,7 +2292,6 @@ GameObject:
   - component: {fileID: 1072333403}
   - component: {fileID: 1072333402}
   - component: {fileID: 1072333401}
-  - component: {fileID: 1072333400}
   m_Layer: 5
   m_Name: Template Dokumen
   m_TagString: Untagged
@@ -2352,21 +2319,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1072333400
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1072333398}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &1072333401
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2918,7 +2870,6 @@ GameObject:
   - component: {fileID: 1298567565}
   - component: {fileID: 1298567564}
   - component: {fileID: 1298567563}
-  - component: {fileID: 1298567562}
   m_Layer: 5
   m_Name: E-Book
   m_TagString: Untagged
@@ -2946,21 +2897,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1298567562
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1298567560}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &1298567563
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4375,7 +4311,6 @@ GameObject:
   - component: {fileID: 1909360561}
   - component: {fileID: 1909360560}
   - component: {fileID: 1909360559}
-  - component: {fileID: 1909360558}
   m_Layer: 5
   m_Name: Modul Belajar
   m_TagString: Untagged
@@ -4403,21 +4338,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &1909360558
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1909360556}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &1909360559
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -5088,7 +5008,6 @@ GameObject:
   - component: {fileID: 2141447157}
   - component: {fileID: 2141447156}
   - component: {fileID: 2141447155}
-  - component: {fileID: 2141447154}
   m_Layer: 5
   m_Name: Template PPT
   m_TagString: Untagged
@@ -5116,21 +5035,6 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 0, y: 0}
   m_Pivot: {x: 0.5, y: 0.5}
---- !u!114 &2141447154
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 2141447152}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 0b755966a2baa064e825d2d55d43d0b7, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProjectFlowManager
-  productTypeSelectPanel: {fileID: 949842993}
-  slotAndLibraryPanel: {fileID: 1653247250}
-  resultPanel: {fileID: 0}
 --- !u!114 &2141447155
 MonoBehaviour:
   m_ObjectHideFlags: 0

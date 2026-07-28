@@ -18,12 +18,23 @@ namespace ProdukLM
         Transform originalParent;
         Vector2 originalPosition;
         Canvas rootCanvas;
+        RectTransform rootCanvasRect;
+        Camera rootCanvasCamera;
 
         void Awake()
         {
             canvasGroup = GetComponent<CanvasGroup>();
             rect = GetComponent<RectTransform>();
-            rootCanvas = GetComponentInParent<Canvas>();
+
+            var parentCanvas = GetComponentInParent<Canvas>();
+            if (parentCanvas != null)
+            {
+                rootCanvas = parentCanvas.rootCanvas;
+                rootCanvasRect = rootCanvas.GetComponent<RectTransform>();
+                rootCanvasCamera = rootCanvas.renderMode == RenderMode.ScreenSpaceOverlay
+                    ? null
+                    : rootCanvas.worldCamera;
+            }
         }
 
         // Dipanggil CardLibraryManager tiap kartu baru di-spawn
@@ -36,17 +47,34 @@ namespace ProdukLM
 
         public void OnBeginDrag(PointerEventData eventData)
         {
+            if (rootCanvas == null)
+            {
+                Debug.LogError($"{nameof(CardUI)} pada '{name}' tidak berada di dalam Canvas.", this);
+                return;
+            }
+
             originalParent = transform.parent;
             originalPosition = rect.anchoredPosition;
 
-            // Pindah ke root canvas biar nggak ke-clip sama panel library
+            // Pindah ke Canvas paling atas agar tidak dipotong Mask/Layout panel library.
             transform.SetParent(rootCanvas.transform, true);
+            transform.SetAsLastSibling();
             canvasGroup.blocksRaycasts = false; // biar SlotUI di bawahnya bisa deteksi OnDrop
         }
 
         public void OnDrag(PointerEventData eventData)
         {
-            rect.position = eventData.position;
+            if (rootCanvasRect == null)
+                return;
+
+            if (RectTransformUtility.ScreenPointToLocalPointInRectangle(
+                    rootCanvasRect,
+                    eventData.position,
+                    rootCanvasCamera,
+                    out var localPoint))
+            {
+                rect.localPosition = localPoint;
+            }
         }
 
         public void OnEndDrag(PointerEventData eventData)

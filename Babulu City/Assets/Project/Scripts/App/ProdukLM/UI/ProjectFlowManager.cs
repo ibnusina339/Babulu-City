@@ -26,7 +26,32 @@ namespace ProdukLM
 
         void Awake()
         {
+            if (productTypeSelectPanel == null || slotAndLibraryPanel == null || resultPanel == null)
+            {
+                Debug.LogError(
+                    $"{nameof(ProjectFlowManager)} pada '{name}' belum memiliki semua referensi panel.",
+                    this);
+                enabled = false;
+                return;
+            }
+
+            if (Instance != null && Instance != this)
+            {
+                Debug.LogError(
+                    $"Duplikat {nameof(ProjectFlowManager)} ditemukan pada '{name}'. " +
+                    $"Gunakan hanya satu instance di scene.",
+                    this);
+                enabled = false;
+                return;
+            }
+
             Instance = this;
+        }
+
+        void OnDestroy()
+        {
+            if (Instance == this)
+                Instance = null;
         }
 
         // Dipanggil dari ProductTypeSelectUI saat pemain pilih Product Type
