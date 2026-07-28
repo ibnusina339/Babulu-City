@@ -17,5 +17,13 @@ MonoBehaviour:
   slotType: 2
   icon: {fileID: 0}
   promptFragment: Mahasiswa
-  affinityCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 34f0fdf61f3bbb749b262dfadf8b4ec5, type: 2}
+  - {fileID: 11400000, guid: ae07f130c92b2114fb94ceb8e75a6db2, type: 2}
+  - {fileID: 11400000, guid: 26b36b6d6e3f9344aaf5d197f710395d, type: 2}
+  - {fileID: 11400000, guid: 8a2c7a66acaa8054da34c06986556fa3, type: 2}
+  - {fileID: 11400000, guid: 7eeb67b7a07f0df4783d6c98488742cb, type: 2}
+  - {fileID: 11400000, guid: f884f35c431c40f45b04b88b245141af, type: 2}
+  - {fileID: 11400000, guid: 8ce695a8e6e609741bed26f4d6816e4b, type: 2}
+  - {fileID: 11400000, guid: feae778d6ae2c704db38c12ef6ec09bb, type: 2}
   conflictCards: []

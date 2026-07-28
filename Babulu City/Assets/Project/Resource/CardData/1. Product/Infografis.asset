@@ -10,21 +10,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 086ea25333695c7489ad344b5b8e00da, type: 3}
-  m_Name: Modul Belajar
+  m_Name: Infografis
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
-  cardId: Product_ModulBelajar
-  displayName: Modul Belajar
+  cardId: Product_Infografis
+  displayName: Infografis
   slotType: 0
   icon: {fileID: 0}
-  promptFragment: Modul Belajar
+  promptFragment: Infografis
   affinityCards:
   - {fileID: 11400000, guid: 34f0fdf61f3bbb749b262dfadf8b4ec5, type: 2}
   - {fileID: 11400000, guid: ae07f130c92b2114fb94ceb8e75a6db2, type: 2}
   - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
-  - {fileID: 11400000, guid: fe497402c5e4ac44e873cb3173378dcc, type: 2}
-  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
   - {fileID: 11400000, guid: f884f35c431c40f45b04b88b245141af, type: 2}
-  - {fileID: 11400000, guid: fd60b68ee9c1d1445a33de01e8ec334b, type: 2}
+  - {fileID: 11400000, guid: af1e978a8cc21044286d31f5ed552a6a, type: 2}
+  - {fileID: 11400000, guid: 87614398de1bdce45a5d10666ebdc45e, type: 2}
+  - {fileID: 11400000, guid: feae778d6ae2c704db38c12ef6ec09bb, type: 2}
   conflictCards:
-  - {fileID: 11400000, guid: 6f1406f5466415b44a5fbc73f4085bf2, type: 2}
-  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 25f0d99a2d492144fa875bedaa6ab9ea, type: 2}
+  - {fileID: 11400000, guid: 2cde1b26af2183a4b898b58f35d78af7, type: 2}
+  - {fileID: 11400000, guid: 71b4cb9a87021724aab22b7fdf2647cc, type: 2}

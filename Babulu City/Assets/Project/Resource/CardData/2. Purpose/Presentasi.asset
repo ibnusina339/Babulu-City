@@ -17,5 +17,13 @@ MonoBehaviour:
   slotType: 1
   icon: {fileID: 0}
   promptFragment: presentasi
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 86c911d420d403e47a758b0dd6877f59, type: 2}
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 6e17b9f9e29203e47a54a1d5b63551b3, type: 2}
+  - {fileID: 11400000, guid: ebc61a04ec8d423438ed1089d2d199ef, type: 2}
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 67b8d972dec9fc2468fb14332219ecef, type: 2}
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}

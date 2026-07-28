@@ -17,5 +17,11 @@ MonoBehaviour:
   slotType: 5
   icon: {fileID: 0}
   promptFragment: ringkasan materi
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 7eeb67b7a07f0df4783d6c98488742cb, type: 2}
+  - {fileID: 11400000, guid: 8a2c7a66acaa8054da34c06986556fa3, type: 2}
+  - {fileID: 11400000, guid: fe497402c5e4ac44e873cb3173378dcc, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
+  - {fileID: 11400000, guid: 34f0fdf61f3bbb749b262dfadf8b4ec5, type: 2}
+  conflictCards:
+  - {fileID: 11400000}

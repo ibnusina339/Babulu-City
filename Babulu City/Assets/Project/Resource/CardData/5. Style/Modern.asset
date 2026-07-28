@@ -17,5 +17,9 @@ MonoBehaviour:
   slotType: 4
   icon: {fileID: 0}
   promptFragment: modern
-  affinityCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 4a3147e2440a7a842908cdfe6b911ee7, type: 2}
+  - {fileID: 11400000, guid: ae07f130c92b2114fb94ceb8e75a6db2, type: 2}
+  - {fileID: 11400000, guid: 31db9d459f912bb4e8eaf2abb56ccc7d, type: 2}
+  - {fileID: 11400000, guid: 5060c5cd9643a9c44a03b352c6211436, type: 2}
   conflictCards: []

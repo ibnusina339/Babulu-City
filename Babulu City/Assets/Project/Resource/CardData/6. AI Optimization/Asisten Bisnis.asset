@@ -17,5 +17,12 @@ MonoBehaviour:
   slotType: 5
   icon: {fileID: 0}
   promptFragment: asisten bisnis
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  - {fileID: 11400000, guid: e22269892daa11e459f8a6fb1ebfdc39, type: 2}
+  - {fileID: 11400000, guid: 9e67b89e942efb449803e38742a8bd2f, type: 2}
+  - {fileID: 11400000, guid: db4717bb5742e764e9e791ee0c76effa, type: 2}
+  - {fileID: 11400000, guid: ae07f130c92b2114fb94ceb8e75a6db2, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}

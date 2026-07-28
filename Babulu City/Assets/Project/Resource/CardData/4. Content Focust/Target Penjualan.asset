@@ -17,5 +17,15 @@ MonoBehaviour:
   slotType: 3
   icon: {fileID: 0}
   promptFragment: target penjualan
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: db4717bb5742e764e9e791ee0c76effa, type: 2}
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: e22269892daa11e459f8a6fb1ebfdc39, type: 2}
+  - {fileID: 11400000, guid: 86c911d420d403e47a758b0dd6877f59, type: 2}
+  - {fileID: 11400000, guid: 6f6be81062cc3d1408d35ac41a62024a, type: 2}
+  - {fileID: 11400000, guid: 895235c43e42b3e46904966c7b7568ab, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}

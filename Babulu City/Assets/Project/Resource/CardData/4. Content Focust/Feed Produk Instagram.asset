@@ -17,5 +17,12 @@ MonoBehaviour:
   slotType: 3
   icon: {fileID: 0}
   promptFragment: feed produk instagram
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 75d75162771b47f499c9dab1c8b538d2, type: 2}
+  - {fileID: 11400000, guid: 12288b1670648964c91b77763c067b07, type: 2}
+  - {fileID: 11400000, guid: 4a3147e2440a7a842908cdfe6b911ee7, type: 2}
+  - {fileID: 11400000, guid: 6f1406f5466415b44a5fbc73f4085bf2, type: 2}
+  - {fileID: 11400000, guid: 84b3904a9005fc040adaa517f5bc9275, type: 2}
+  - {fileID: 11400000, guid: c13d2836c4bb41643b99a1c59af24f9f, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: c5e1f6e4b8438ea4a8afdc3176484f0d, type: 2}

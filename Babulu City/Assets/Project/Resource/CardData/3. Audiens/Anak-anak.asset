@@ -17,5 +17,17 @@ MonoBehaviour:
   slotType: 2
   icon: {fileID: 0}
   promptFragment: anak-anak
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 34f0fdf61f3bbb749b262dfadf8b4ec5, type: 2}
+  - {fileID: 11400000, guid: 3d76f954660f2954da4c16f208a8cb3b, type: 2}
+  - {fileID: 11400000, guid: 7eeb67b7a07f0df4783d6c98488742cb, type: 2}
+  - {fileID: 11400000, guid: 8a2c7a66acaa8054da34c06986556fa3, type: 2}
+  - {fileID: 11400000, guid: 67b8d972dec9fc2468fb14332219ecef, type: 2}
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}
+  - {fileID: 11400000, guid: fd60b68ee9c1d1445a33de01e8ec334b, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: e22269892daa11e459f8a6fb1ebfdc39, type: 2}
+  - {fileID: 11400000, guid: 86c911d420d403e47a758b0dd6877f59, type: 2}
+  - {fileID: 11400000, guid: 6f6be81062cc3d1408d35ac41a62024a, type: 2}
+  - {fileID: 11400000, guid: 895235c43e42b3e46904966c7b7568ab, type: 2}
+  - {fileID: 11400000, guid: 29b7ea0b013cd514583f32e939360194, type: 2}

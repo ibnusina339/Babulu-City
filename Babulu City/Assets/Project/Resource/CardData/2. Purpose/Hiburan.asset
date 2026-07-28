@@ -17,5 +17,15 @@ MonoBehaviour:
   slotType: 1
   icon: {fileID: 0}
   promptFragment: hiburan
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 7eeb67b7a07f0df4783d6c98488742cb, type: 2}
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 67b8d972dec9fc2468fb14332219ecef, type: 2}
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  - {fileID: 11400000, guid: e22269892daa11e459f8a6fb1ebfdc39, type: 2}
+  - {fileID: 11400000, guid: 6f6be81062cc3d1408d35ac41a62024a, type: 2}
+  - {fileID: 11400000, guid: eec987f26c1ea8e449dc1a5c864406d4, type: 2}
+  - {fileID: 11400000, guid: 8ce695a8e6e609741bed26f4d6816e4b, type: 2}

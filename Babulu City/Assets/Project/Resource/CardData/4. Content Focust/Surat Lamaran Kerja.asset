@@ -17,5 +17,12 @@ MonoBehaviour:
   slotType: 3
   icon: {fileID: 0}
   promptFragment: surat lamaran kerja
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 25f0d99a2d492144fa875bedaa6ab9ea, type: 2}
+  - {fileID: 11400000, guid: 7c3b50b67f08b2048a63bb4faabeac96, type: 2}
+  - {fileID: 11400000, guid: 1a36645454ffbb840a54fffb05e75389, type: 2}
+  - {fileID: 11400000, guid: eec987f26c1ea8e449dc1a5c864406d4, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}

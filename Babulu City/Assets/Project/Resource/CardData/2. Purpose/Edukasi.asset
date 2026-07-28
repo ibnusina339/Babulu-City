@@ -17,5 +17,16 @@ MonoBehaviour:
   slotType: 1
   icon: {fileID: 0}
   promptFragment: Edukasi
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 8a2c7a66acaa8054da34c06986556fa3, type: 2}
+  - {fileID: 11400000, guid: 7eeb67b7a07f0df4783d6c98488742cb, type: 2}
+  - {fileID: 11400000, guid: 26b36b6d6e3f9344aaf5d197f710395d, type: 2}
+  - {fileID: 11400000, guid: fe497402c5e4ac44e873cb3173378dcc, type: 2}
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
+  - {fileID: 11400000, guid: f884f35c431c40f45b04b88b245141af, type: 2}
+  - {fileID: 11400000, guid: feae778d6ae2c704db38c12ef6ec09bb, type: 2}
+  - {fileID: 11400000, guid: fd60b68ee9c1d1445a33de01e8ec334b, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 9e67b89e942efb449803e38742a8bd2f, type: 2}
+  - {fileID: 11400000, guid: 6e17b9f9e29203e47a54a1d5b63551b3, type: 2}

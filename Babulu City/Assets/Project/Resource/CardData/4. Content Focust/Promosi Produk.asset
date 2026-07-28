@@ -17,5 +17,9 @@ MonoBehaviour:
   slotType: 3
   icon: {fileID: 0}
   promptFragment: promosi produk
-  affinityCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 75d75162771b47f499c9dab1c8b538d2, type: 2}
+  - {fileID: 11400000, guid: c13d2836c4bb41643b99a1c59af24f9f, type: 2}
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  - {fileID: 11400000, guid: c13d2836c4bb41643b99a1c59af24f9f, type: 2}
   conflictCards: []
