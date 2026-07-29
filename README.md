@@ -163,6 +163,6 @@ Project ini dikerjakan bersama oleh:
 
 **BRIDA — Babulu City**
 
-*Create. Publish. Learn. Grow.*
+*Made by Man Insan Cendekia Students*
 
 </div>
