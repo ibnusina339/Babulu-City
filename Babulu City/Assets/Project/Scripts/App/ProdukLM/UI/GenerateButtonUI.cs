@@ -15,13 +15,17 @@ namespace ProdukLM
         void OnEnable()
         {
             ProjectFlowManager.Instance.OnSlotChanged += RefreshInteractable;
+            ProjectFlowManager.Instance.OnDailyLimitChanged += RefreshInteractable;
             RefreshInteractable();
         }
 
         void OnDisable()
         {
             if (ProjectFlowManager.Instance != null)
+            {
                 ProjectFlowManager.Instance.OnSlotChanged -= RefreshInteractable;
+                ProjectFlowManager.Instance.OnDailyLimitChanged -= RefreshInteractable;
+            }
         }
 
         void OnClick()
@@ -33,7 +37,8 @@ namespace ProdukLM
         void RefreshInteractable()
         {
             bool allFilled = ProjectFlowManager.Instance.State.GetNextEmptySlot() == null;
-            GetComponent<Button>().interactable = allFilled;
+            GetComponent<Button>().interactable =
+                allFilled && ProjectFlowManager.Instance.CanCreateProductToday;
         }
     }
 }

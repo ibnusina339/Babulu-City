@@ -17,7 +17,11 @@ namespace ProdukLM
                 {
                     var a = filled[i];
                     var b = filled[j];
-                    if (a.conflictCards.Contains(b) || b.conflictCards.Contains(a))
+                    bool hasConflict =
+                        (a.conflictCards != null && a.conflictCards.Contains(b)) ||
+                        (b.conflictCards != null && b.conflictCards.Contains(a));
+
+                    if (hasConflict)
                     {
                         feedback.Add($"{a.displayName} kurang cocok dengan {b.displayName}. Coba ganti salah satunya.");
                     }

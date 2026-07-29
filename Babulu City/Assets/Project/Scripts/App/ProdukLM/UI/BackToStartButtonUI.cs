@@ -3,7 +3,7 @@ using UnityEngine.UI;
 
 namespace ProdukLM
 {
-    // Taruh di tombol "Buat Lagi" / "Kembali" di panel Tahap 3.
+    // Komponen lama untuk tombol Result; sekarang kembali satu tahap agar pilihan bisa direvisi.
     [RequireComponent(typeof(Button))]
     public class BackToStartButtonUI : MonoBehaviour
     {
@@ -11,7 +11,7 @@ namespace ProdukLM
         {
             GetComponent<Button>().onClick.AddListener(() =>
             {
-                ProjectFlowManager.Instance.BackToStart();
+                ProjectFlowManager.Instance.BackOneStep();
             });
         }
     }

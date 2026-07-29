@@ -8,15 +8,16 @@ namespace ProdukLM
     // Taruh di panel Tahap 3 (layar hasil Generate).
     public class StatsResultUI : MonoBehaviour
     {
-        [Header("5 Stats (isi salah satu atau dua-duanya per stat)")]
+        [Header("Ringkasan produk")]
+        public TMP_Text productNameText;
+        public TMP_Text finalPromptText;
+        public TMP_Text qualityLabelText;
+
+        [Header("3 Stats - bebas ditata atau diganti di prefab")]
         public Slider qualitySlider;
         public TMP_Text qualityText;
         public Slider relevansiSlider;
         public TMP_Text relevansiText;
-        public Slider estetikaSlider;
-        public TMP_Text estetikaText;
-        public Slider profesionalismeSlider;
-        public TMP_Text profesionalismeText;
         public Slider nilaiJualSlider;
         public TMP_Text nilaiJualText;
 
@@ -38,12 +39,23 @@ namespace ProdukLM
 
         void Refresh()
         {
-            var stats = ProjectFlowManager.Instance.LastResult;
+            var flow = ProjectFlowManager.Instance;
+            var stats = flow.LastResult;
+
+            if (productNameText != null)
+            {
+                var productCard = flow.State.GetCard(SlotType.ProductType);
+                productNameText.text = productCard != null ? productCard.displayName : "Produk Digital";
+            }
+
+            if (finalPromptText != null)
+                finalPromptText.text = PromptBuilder.Build(flow.State);
+
+            if (qualityLabelText != null)
+                qualityLabelText.text = GetQualityLabel(stats.Quality);
 
             SetStat(qualitySlider, qualityText, stats.Quality);
             SetStat(relevansiSlider, relevansiText, stats.Relevansi);
-            SetStat(estetikaSlider, estetikaText, stats.Estetika);
-            SetStat(profesionalismeSlider, profesionalismeText, stats.Profesionalisme);
             SetStat(nilaiJualSlider, nilaiJualText, stats.NilaiJual);
 
             RefreshFeedback(ProjectFlowManager.Instance.LastFeedback);
@@ -65,8 +77,17 @@ namespace ProdukLM
             foreach (var line in lines)
             {
                 var instance = Instantiate(feedbackLinePrefab, feedbackContainer);
+                instance.gameObject.SetActive(true);
                 instance.text = line;
             }
+        }
+
+        static string GetQualityLabel(int quality)
+        {
+            if (quality >= 90) return "Sangat Bagus";
+            if (quality >= 75) return "Bagus";
+            if (quality >= 60) return "Cukup";
+            return "Perlu Ditingkatkan";
         }
     }
 }

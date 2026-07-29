@@ -38,6 +38,7 @@ namespace ProdukLM
             // Tolak kalau tipe kartu nggak cocok sama slot ini
             if (cardUI.data.slotType != slotType) return;
 
+            cardUI.AcceptDrop();
             ProjectFlowManager.Instance.AssignCardToSlot(slotType, cardUI.data);
         }
 

@@ -30,7 +30,11 @@ namespace ProdukLM
             if (nextSlot == null) return; // semua slot sudah terisi, sembunyikan/nonaktifkan library
 
             foreach (Transform child in cardContainer)
+            {
+                // Hilangkan langsung dari layout; Destroy baru selesai di akhir frame.
+                child.gameObject.SetActive(false);
                 Destroy(child.gameObject);
+            }
 
             var relevantCards = allCards.Where(c => c.slotType == nextSlot.Value);
             foreach (var card in relevantCards)

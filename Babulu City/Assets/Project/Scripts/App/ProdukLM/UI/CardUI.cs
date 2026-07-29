@@ -20,6 +20,7 @@ namespace ProdukLM
         Canvas rootCanvas;
         RectTransform rootCanvasRect;
         Camera rootCanvasCamera;
+        bool dropAccepted;
 
         void Awake()
         {
@@ -55,6 +56,7 @@ namespace ProdukLM
 
             originalParent = transform.parent;
             originalPosition = rect.anchoredPosition;
+            dropAccepted = false;
 
             // Pindah ke Canvas paling atas agar tidak dipotong Mask/Layout panel library.
             transform.SetParent(rootCanvas.transform, true);
@@ -81,13 +83,23 @@ namespace ProdukLM
         {
             canvasGroup.blocksRaycasts = true;
 
-            // Kalau nggak ke-drop di slot manapun (SlotUI yang handle assign),
-            // kartu snap-back ke posisi awal di library.
-            if (transform.parent == rootCanvas.transform)
+            if (dropAccepted)
             {
+                // LibraryManager sudah membuat pilihan untuk slot berikutnya.
+                // Hapus kartu yang barusan dipilih agar tidak ikut terbawa.
+                Destroy(gameObject);
+            }
+            else if (rootCanvas != null && transform.parent == rootCanvas.transform)
+            {
+                // Drop ditolak atau dilepas di luar slot: kembalikan ke library.
                 transform.SetParent(originalParent, true);
                 rect.anchoredPosition = originalPosition;
             }
+        }
+
+        public void AcceptDrop()
+        {
+            dropAccepted = true;
         }
     }
 }
