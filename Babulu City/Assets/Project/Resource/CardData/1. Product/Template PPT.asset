@@ -17,5 +17,16 @@ MonoBehaviour:
   slotType: 0
   icon: {fileID: 0}
   promptFragment: Template PPT
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 95ebefb3054aa5a4bacb56c10f289ba0, type: 2}
+  - {fileID: 11400000, guid: db4717bb5742e764e9e791ee0c76effa, type: 2}
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 6e17b9f9e29203e47a54a1d5b63551b3, type: 2}
+  - {fileID: 11400000, guid: 9e67b89e942efb449803e38742a8bd2f, type: 2}
+  - {fileID: 11400000, guid: 29b7ea0b013cd514583f32e939360194, type: 2}
+  - {fileID: 11400000, guid: ebc61a04ec8d423438ed1089d2d199ef, type: 2}
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: a20a433a1daf2be4399b41ad49013986, type: 2}
+  - {fileID: 11400000, guid: 3d76f954660f2954da4c16f208a8cb3b, type: 2}
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}

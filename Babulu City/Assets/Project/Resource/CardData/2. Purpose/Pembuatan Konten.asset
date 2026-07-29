@@ -17,5 +17,12 @@ MonoBehaviour:
   slotType: 1
   icon: {fileID: 0}
   promptFragment: pembuatan konten
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 4a3147e2440a7a842908cdfe6b911ee7, type: 2}
+  - {fileID: 11400000, guid: 31db9d459f912bb4e8eaf2abb56ccc7d, type: 2}
+  - {fileID: 11400000, guid: 6f1406f5466415b44a5fbc73f4085bf2, type: 2}
+  - {fileID: 11400000, guid: c13d2836c4bb41643b99a1c59af24f9f, type: 2}
+  - {fileID: 11400000, guid: 84b3904a9005fc040adaa517f5bc9275, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: c5e1f6e4b8438ea4a8afdc3176484f0d, type: 2}
+  - {fileID: 11400000, guid: 6f225f7e49e2fb246a75e2bcb67bad17, type: 2}

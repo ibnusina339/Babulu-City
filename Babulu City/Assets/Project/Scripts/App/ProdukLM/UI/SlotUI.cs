@@ -13,6 +13,23 @@ namespace ProdukLM
         public TMP_Text label;
         public GameObject activeIndicator; // border/highlight, aktifkan kalau ini slot kosong berikutnya
 
+        void OnEnable()
+        {
+            ProjectFlowManager.Instance.OnSlotChanged += HandleSlotChanged;
+            HandleSlotChanged(); // refresh langsung saat panel Tahap 2 baru aktif
+        }
+
+        void OnDisable()
+        {
+            if (ProjectFlowManager.Instance != null)
+                ProjectFlowManager.Instance.OnSlotChanged -= HandleSlotChanged;
+        }
+
+        void HandleSlotChanged()
+        {
+            Refresh(ProjectFlowManager.Instance.State);
+        }
+
         public void OnDrop(PointerEventData eventData)
         {
             var cardUI = eventData.pointerDrag?.GetComponent<CardUI>();
@@ -21,6 +38,7 @@ namespace ProdukLM
             // Tolak kalau tipe kartu nggak cocok sama slot ini
             if (cardUI.data.slotType != slotType) return;
 
+            cardUI.AcceptDrop();
             ProjectFlowManager.Instance.AssignCardToSlot(slotType, cardUI.data);
         }
 

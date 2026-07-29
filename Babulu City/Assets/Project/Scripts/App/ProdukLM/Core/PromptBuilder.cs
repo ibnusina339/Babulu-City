@@ -4,11 +4,34 @@ namespace ProdukLM
     {
         public static string Build(ProjectState state)
         {
-            string F(SlotType s) => state.IsSlotFilled(s) ? state.GetCard(s).promptFragment : "...";
+            if (!state.IsSlotFilled(SlotType.ProductType))
+                return string.Empty;
 
-            return $"Buatkan {F(SlotType.ProductType)} untuk {F(SlotType.Purpose)}, " +
-                   $"ditujukan untuk {F(SlotType.Audience)}, dengan fokus konten pada {F(SlotType.ContentFocus)}, " +
-                   $"menggunakan gaya {F(SlotType.Style)}, dan dioptimasi untuk {F(SlotType.AIOptimization)}.";
+            string prompt = $"Buatkan {Fragment(SlotType.ProductType)}";
+
+            if (!state.IsSlotFilled(SlotType.Purpose))
+                return prompt + ".";
+            prompt += $" untuk {Fragment(SlotType.Purpose)}";
+
+            if (!state.IsSlotFilled(SlotType.Audience))
+                return prompt + ".";
+            prompt += $", ditujukan untuk {Fragment(SlotType.Audience)}";
+
+            if (!state.IsSlotFilled(SlotType.ContentFocus))
+                return prompt + ".";
+            prompt += $", dengan fokus konten pada {Fragment(SlotType.ContentFocus)}";
+
+            if (!state.IsSlotFilled(SlotType.Style))
+                return prompt + ".";
+            prompt += $", menggunakan gaya {Fragment(SlotType.Style)}";
+
+            if (!state.IsSlotFilled(SlotType.AIOptimization))
+                return prompt + ".";
+            prompt += $", dan dioptimasi untuk {Fragment(SlotType.AIOptimization)}";
+
+            return prompt + ".";
+
+            string Fragment(SlotType slot) => state.GetCard(slot).promptFragment;
         }
     }
 }

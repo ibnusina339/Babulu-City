@@ -17,5 +17,10 @@ MonoBehaviour:
   slotType: 5
   icon: {fileID: 0}
   promptFragment: persuasif
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: c1c699e92fe4504429183e919f6f7438, type: 2}
+  - {fileID: 11400000, guid: 6e17b9f9e29203e47a54a1d5b63551b3, type: 2}
+  - {fileID: 11400000, guid: 95ebefb3054aa5a4bacb56c10f289ba0, type: 2}
+  - {fileID: 11400000, guid: 29b7ea0b013cd514583f32e939360194, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 25f0d99a2d492144fa875bedaa6ab9ea, type: 2}

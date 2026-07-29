@@ -17,5 +17,10 @@ MonoBehaviour:
   slotType: 5
   icon: {fileID: 0}
   promptFragment: keuangan
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 700c534c079972e48ab54d26038bc4d1, type: 2}
+  - {fileID: 11400000, guid: 9e67b89e942efb449803e38742a8bd2f, type: 2}
+  - {fileID: 11400000, guid: db4717bb5742e764e9e791ee0c76effa, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: 1ba26ce064c4b2c4e957a885e26b0dd7, type: 2}
+  - {fileID: 11400000, guid: 7ba6cac2975bb8642a7d295255a9aa69, type: 2}

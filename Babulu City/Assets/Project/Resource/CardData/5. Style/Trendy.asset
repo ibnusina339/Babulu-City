@@ -17,5 +17,11 @@ MonoBehaviour:
   slotType: 4
   icon: {fileID: 0}
   promptFragment: trendy
-  affinityCards: []
-  conflictCards: []
+  affinityCards:
+  - {fileID: 11400000, guid: 4a3147e2440a7a842908cdfe6b911ee7, type: 2}
+  - {fileID: 11400000, guid: 31db9d459f912bb4e8eaf2abb56ccc7d, type: 2}
+  - {fileID: 11400000, guid: c13d2836c4bb41643b99a1c59af24f9f, type: 2}
+  conflictCards:
+  - {fileID: 11400000, guid: c5e1f6e4b8438ea4a8afdc3176484f0d, type: 2}
+  - {fileID: 11400000, guid: 8a2c7a66acaa8054da34c06986556fa3, type: 2}
+  - {fileID: 11400000, guid: 1a36645454ffbb840a54fffb05e75389, type: 2}
