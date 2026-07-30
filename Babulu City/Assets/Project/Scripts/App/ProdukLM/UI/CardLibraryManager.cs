@@ -13,6 +13,14 @@ namespace ProdukLM
 
         void OnEnable()
         {
+            if (ProjectFlowManager.Instance == null)
+            {
+                Debug.LogError(
+                    $"{nameof(CardLibraryManager)} pada '{name}' tidak menemukan {nameof(ProjectFlowManager)}.",
+                    this);
+                return;
+            }
+
             ProjectFlowManager.Instance.OnSlotChanged += Refresh;
             Refresh();
         }
@@ -27,20 +35,43 @@ namespace ProdukLM
         {
             var state = ProjectFlowManager.Instance.State;
             var nextSlot = state.GetNextEmptySlot();
-            if (nextSlot == null) return; // semua slot sudah terisi, sembunyikan/nonaktifkan library
+            ClearCards();
 
-            foreach (Transform child in cardContainer)
+            if (nextSlot == null)
+                return; // semua slot sudah terisi
+
+            if (cardContainer == null || cardPrefab == null)
             {
-                // Hilangkan langsung dari layout; Destroy baru selesai di akhir frame.
-                child.gameObject.SetActive(false);
-                Destroy(child.gameObject);
+                Debug.LogError(
+                    $"{nameof(CardLibraryManager)} pada '{name}' belum memiliki container atau prefab kartu.",
+                    this);
+                return;
             }
 
-            var relevantCards = allCards.Where(c => c.slotType == nextSlot.Value);
+            var relevantCards = (allCards ?? System.Array.Empty<CardData>())
+                .Where(c => c != null && c.slotType == nextSlot.Value);
             foreach (var card in relevantCards)
             {
                 var instance = Instantiate(cardPrefab, cardContainer);
+                instance.gameObject.SetActive(true);
                 instance.SetData(card);
+            }
+        }
+
+        void ClearCards()
+        {
+            if (cardContainer == null)
+                return;
+
+            foreach (Transform child in cardContainer)
+            {
+                // Dekorasi milik layout desainer tetap aman bila nanti
+                // ditambahkan ke container yang sama.
+                if (child.GetComponent<CardUI>() == null)
+                    continue;
+
+                child.gameObject.SetActive(false);
+                Destroy(child.gameObject);
             }
         }
     }
