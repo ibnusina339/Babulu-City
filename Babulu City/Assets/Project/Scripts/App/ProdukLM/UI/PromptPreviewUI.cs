@@ -10,6 +10,14 @@ namespace ProdukLM
 
         void OnEnable()
         {
+            if (ProjectFlowManager.Instance == null)
+            {
+                Debug.LogError(
+                    $"{nameof(PromptPreviewUI)} pada '{name}' tidak menemukan {nameof(ProjectFlowManager)}.",
+                    this);
+                return;
+            }
+
             ProjectFlowManager.Instance.OnSlotChanged += Refresh;
             Refresh();
         }
@@ -22,7 +30,8 @@ namespace ProdukLM
 
         void Refresh()
         {
-            promptText.text = PromptBuilder.Build(ProjectFlowManager.Instance.State);
+            if (promptText != null && ProjectFlowManager.Instance != null)
+                promptText.text = PromptBuilder.Build(ProjectFlowManager.Instance.State);
         }
     }
 }
