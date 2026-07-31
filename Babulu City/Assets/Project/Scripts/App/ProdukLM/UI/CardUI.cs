@@ -27,6 +27,15 @@ namespace ProdukLM
             canvasGroup = GetComponent<CanvasGroup>();
             rect = GetComponent<RectTransform>();
 
+            // Seluruh badan kartu harus menjadi area drag. Prefab lama memiliki
+            // Raycast Target nonaktif pada Image sehingga drag hanya terdeteksi
+            // bila pointer tepat mengenai glyph teks.
+            var dragGraphic = GetComponent<Graphic>();
+            if (dragGraphic != null)
+                dragGraphic.raycastTarget = true;
+            if (nameText != null)
+                nameText.raycastTarget = false;
+
             var parentCanvas = GetComponentInParent<Canvas>();
             if (parentCanvas != null)
             {
