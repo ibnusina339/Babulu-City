@@ -17,7 +17,7 @@ namespace IntegratedApps.Editor
 {
     public static class MainProdukLMSceneIntegrator
     {
-        const int CurrentIntegrationVersion = 7;
+        const int CurrentIntegrationVersion = 10;
         const string CardPrefabPath = "Assets/Project/Prefabs/UI/CardPrefab.prefab";
         const string CardDataFolder = "Assets/Project/Resource/CardData";
 
@@ -78,7 +78,8 @@ namespace IntegratedApps.Editor
             Transform page3 = Require(window, "Page3-hasilproduk");
 
             EnsureEventSystem(scene);
-            SetupDesktopZoom(uiRoot.transform, window);
+            SetupDesktopZoom(uiRoot.transform);
+            DisableDecorativeRaycasts(uiRoot.transform);
 
             ProjectFlowManager flow = GetOrAdd<ProjectFlowManager>(window.gameObject);
             flow.productTypeSelectPanel = page1.gameObject;
@@ -87,7 +88,7 @@ namespace IntegratedApps.Editor
 
             SetupBuilder(page2);
             SetupDesktopAndProductSelection(uiRoot.transform, window, page1, page2, flow);
-            SetupClock(uiRoot.transform, window);
+            SetupClock(uiRoot.transform);
 
             page1.gameObject.SetActive(true);
             page2.gameObject.SetActive(false);
@@ -125,7 +126,7 @@ namespace IntegratedApps.Editor
             SetupSlot(Require(slotRoot, "Gaya Penyajian"), SlotType.Style);
             SetupSlot(Require(slotRoot, "Fokus AI"), SlotType.AIOptimization);
 
-            Transform promptBox = Require(page2, "chatbox(aiprompt)");
+            Transform promptBox = RequireAny(page2, "ChatBox", "chatbox(aiprompt)");
             TMP_Text promptText = EnsureText(
                 promptBox,
                 "PromptPreviewText",
@@ -139,8 +140,12 @@ namespace IntegratedApps.Editor
             preview.promptText = promptText;
             EditorUtility.SetDirty(preview);
 
-            GetOrAdd<BackButtonUI>(EnsureButton(Require(page2, "sebelum")).gameObject);
-            GetOrAdd<GenerateButtonUI>(EnsureButton(Require(page2, "sesudah")).gameObject);
+            // Desain terbaru memakai tombol ikon. Visual ikon sengaja tidak
+            // dibuat oleh script agar nanti bisa langsung diganti desainer.
+            Transform backButton = RequireAny(page2, "Previous Button", "sebelum");
+            Transform generateButton = RequireAny(page2, "Send Button", "sesudah");
+            GetOrAdd<BackButtonUI>(EnsureButton(backButton).gameObject);
+            GetOrAdd<GenerateButtonUI>(EnsureButton(generateButton).gameObject);
         }
 
         static void SetupDesktopAndProductSelection(
@@ -161,59 +166,73 @@ namespace IntegratedApps.Editor
                 ProductOption(page1, "tab/infografis", FindCard(catalog, "Infografis"))
             };
 
-            Transform descriptionPanel = Require(page1, "deskripsi");
+            Transform descriptionPanel = RequireAny(page1, "Description Panel", "deskripsi");
+            Transform descriptionContent = FindChildByNames(
+                descriptionPanel,
+                "deskripsi",
+                "Description");
+            if (descriptionContent == null)
+                descriptionContent = descriptionPanel;
+
             TMP_Text referenceText = FindReferenceText(page1);
             TMP_Text productName = EnsureText(
-                descriptionPanel,
+                descriptionContent,
                 "SelectedProductName",
+                referenceText,
+                32f,
+                TextAlignmentOptions.Center);
+            TMP_Text description = EnsureText(
+                descriptionContent,
+                "SelectionDescription",
                 referenceText,
                 26f,
                 TextAlignmentOptions.Center);
-            TMP_Text description = EnsureText(
+
+            Transform designedPreview = FindChildByNames(
                 descriptionPanel,
-                "SelectionDescription",
-                referenceText,
-                20f,
-                TextAlignmentOptions.Center);
-            Image productIcon = EnsureImage(descriptionPanel, "SelectedProductIcon");
+                "Image",
+                "SelectedProductIcon");
+            Image productIcon = designedPreview != null
+                ? designedPreview.GetComponent<Image>()
+                : null;
+            if (productIcon == null)
+                productIcon = EnsureImage(descriptionPanel, "SelectedProductIcon");
+
             productIcon.preserveAspect = true;
             productIcon.raycastTarget = false;
             productIcon.color = Color.white;
 
-            RectTransform iconRect = productIcon.rectTransform;
-            iconRect.anchorMin = new Vector2(0.5f, 0.70f);
-            iconRect.anchorMax = new Vector2(0.5f, 0.70f);
-            iconRect.pivot = new Vector2(0.5f, 0.5f);
-            iconRect.anchoredPosition = Vector2.zero;
-            iconRect.sizeDelta = new Vector2(160f, 160f);
-
             RectTransform nameRect = productName.rectTransform;
-            nameRect.anchorMin = new Vector2(0.08f, 0.42f);
-            nameRect.anchorMax = new Vector2(0.92f, 0.57f);
+            nameRect.anchorMin = new Vector2(0.08f, 0.34f);
+            nameRect.anchorMax = new Vector2(0.92f, 0.44f);
             nameRect.offsetMin = Vector2.zero;
             nameRect.offsetMax = Vector2.zero;
 
             RectTransform descriptionRect = description.rectTransform;
             descriptionRect.anchorMin = new Vector2(0.08f, 0.08f);
-            descriptionRect.anchorMax = new Vector2(0.92f, 0.38f);
+            descriptionRect.anchorMax = new Vector2(0.92f, 0.31f);
             descriptionRect.offsetMin = Vector2.zero;
             descriptionRect.offsetMax = Vector2.zero;
 
             MainProdukLMWindowUI controller = GetOrAdd<MainProdukLMWindowUI>(uiRoot.gameObject);
             controller.windowRoot = window.gameObject;
-            controller.windowTaskbar = Require(Require(uiRoot, "Desktop"), "taskbar");
+            controller.windowTaskbar = RequireDescendant(uiRoot, "taskbar");
             controller.flowManager = flow;
             controller.productOptions = options.ToArray();
-            Transform larisIcon = RequireDescendant(uiRoot, "LARIS.ID");
             controller.openButton = EnsureButton(
-                Require(larisIcon.parent, "ventra"));
-            controller.confirmSelectionButton = EnsureButton(Require(page1, "selectbox"));
+                RequireDescendant(uiRoot, "ProdukLM App"));
+            controller.confirmSelectionButton = EnsureButton(
+                RequireAny(descriptionPanel, "selectbox", "Pilih"));
 
-            // Tahap 1 cukup memakai tombol PILIH. Tombol navigasi kanan milik
-            // template desainer tetap disimpan sebagai GameObject, tetapi
-            // disembunyikan agar mudah dipakai lagi bila desain berubah.
-            Transform stageOneNext = Require(page1, "sesudah (1)");
-            stageOneNext.gameObject.SetActive(false);
+            // Tahap 1 sekarang hanya memakai tombol PILIH. Jika scene lama
+            // masih memiliki tombol navigasi tambahan, sembunyikan tanpa
+            // menjadikannya syarat integrasi.
+            Transform stageOneNext = FindChildByNames(
+                page1,
+                "sesudah (1)",
+                "Next Button");
+            if (stageOneNext != null)
+                stageOneNext.gameObject.SetActive(false);
             controller.nextStageButton = null;
 
             controller.selectedProductIcon = productIcon;
@@ -227,9 +246,16 @@ namespace IntegratedApps.Editor
             if (page1Close != null)
                 closeButtons.Add(EnsureButton(page1Close));
 
-            Transform page2Close = FindDescendant(page2, "exittab (1)");
+            Transform page2Close = FindDescendant(page2, "exittab");
             if (page2Close != null)
                 closeButtons.Add(EnsureButton(page2Close));
+
+            Transform page3 = window.Find("Page3-hasilproduk");
+            Transform page3Close = page3 != null
+                ? FindDescendant(page3, "exittab")
+                : null;
+            if (page3Close != null)
+                closeButtons.Add(EnsureButton(page3Close));
 
             Transform optionalExit = FindDescendant(window, "Exit Button");
             if (optionalExit != null)
@@ -250,7 +276,7 @@ namespace IntegratedApps.Editor
                 button = button,
                 card = card,
                 highlightGraphic = button.targetGraphic,
-                previewIcon = FindProductIcon(button)
+                previewIcon = FindProductIcon(button) ?? card.icon
             };
         }
 
@@ -284,44 +310,18 @@ namespace IntegratedApps.Editor
             return score;
         }
 
-        static void SetupClock(Transform uiRoot, Transform productWindow)
+        static void SetupClock(Transform uiRoot)
         {
-            Transform desktopTaskbar = Require(Require(uiRoot, "Desktop"), "taskbar");
-            Transform productTaskbar = productWindow.Find("taskbar");
+            Transform taskbar = RequireDescendant(uiRoot, "taskbar");
+            TMP_Text clockText = RequireText(taskbar, "Jam", "jam");
+            TMP_Text dateText = RequireText(taskbar, "Tanggal", "tanggal");
 
-            TMP_Text desktopReference = FindReferenceText(desktopTaskbar);
-
-            TMP_Text desktopClock = ConfigureClockText(
-                EnsureText(desktopTaskbar, "jam", desktopReference, 16f, TextAlignmentOptions.MidlineRight),
-                new Vector2(760f, -391f));
-            TMP_Text desktopDate = ConfigureClockText(
-                EnsureText(desktopTaskbar, "tanggal", desktopReference, 16f, TextAlignmentOptions.MidlineRight),
-                new Vector2(760f, -412f));
-
-            TMP_Text productClock = null;
-            TMP_Text productDate = null;
-            if (productTaskbar != null)
-            {
-                TMP_Text productReference = FindReferenceText(productTaskbar);
-                Transform combinedClock = productTaskbar.Find("jam&tanggal");
-                if (combinedClock != null)
-                    combinedClock.gameObject.SetActive(false);
-
-                productClock = ConfigureClockText(
-                    EnsureText(productTaskbar, "jam", productReference, 16f, TextAlignmentOptions.MidlineRight),
-                    new Vector2(760f, -391f));
-                productDate = ConfigureClockText(
-                    EnsureText(productTaskbar, "tanggal", productReference, 16f, TextAlignmentOptions.MidlineRight),
-                    new Vector2(760f, -412f));
-            }
+            ConfigureClockText(clockText);
+            ConfigureClockText(dateText);
 
             GameClockUI clock = GetOrAdd<GameClockUI>(uiRoot.gameObject);
-            clock.clockTexts = productClock != null
-                ? new[] { desktopClock, productClock }
-                : new[] { desktopClock };
-            clock.dateTexts = productDate != null
-                ? new[] { desktopDate, productDate }
-                : new[] { desktopDate };
+            clock.clockTexts = new[] { clockText };
+            clock.dateTexts = new[] { dateText };
             clock.startHour = 20;
             clock.endHour = 24;
             clock.realSecondsPerGameMinute = 7.5f;
@@ -331,80 +331,45 @@ namespace IntegratedApps.Editor
             EditorUtility.SetDirty(clock);
         }
 
-        static void SetupDesktopZoom(Transform uiRoot, Transform productWindow)
+        static void SetupDesktopZoom(Transform uiRoot)
         {
             Transform desktop = Require(uiRoot, "Desktop");
             Transform mainMenu = Require(desktop, "MainMenu");
-            Transform taskbar = Require(desktop, "taskbar");
+            Transform taskbar = RequireDescendant(uiRoot, "taskbar");
 
-            StretchToParent(desktop);
-            StretchToParent(productWindow);
-            desktop.localScale = new Vector3(1.03f, 1.03f, 1f);
-
-            Transform laptopFrame = mainMenu.Find("LaptopFrame");
-            Transform background = mainMenu.Find("bg_mainmenu");
-            Transform desktopContent = mainMenu.Find("mainmenu");
-
-            SetFixedRect(mainMenu, Vector2.zero, new Vector2(100f, 100f));
-            SetFixedRect(taskbar, Vector2.zero, new Vector2(100f, 100f));
-
-            if (laptopFrame != null)
-                SetFixedRect(
-                    laptopFrame,
-                    new Vector2(1.5463f, 0.88854f),
-                    new Vector2(1869.2f, 1039.1f));
-            if (background != null)
-                SetFixedRect(
-                    background,
-                    new Vector2(1.514f, 43.929f),
-                    new Vector2(1752.864f, 815.613f));
-            if (desktopContent != null)
-                SetFixedRect(
-                    desktopContent,
-                    new Vector2(1.536f, 0.877f),
-                    new Vector2(1869.209f, 1039.108f));
-
+            // Layout terbaru sudah diatur langsung sebagai GameObject di scene.
+            // Integrator hanya memastikan referensinya valid dan tidak lagi
+            // menimpa posisi/ukuran karya desainer.
             EditorUtility.SetDirty(desktop);
+            EditorUtility.SetDirty(mainMenu);
+            EditorUtility.SetDirty(taskbar);
         }
 
-        static void SetFixedRect(Transform target, Vector2 position, Vector2 size)
+        static void DisableDecorativeRaycasts(Transform uiRoot)
         {
-            if (target is not RectTransform rect)
+            SetRaycastTarget(uiRoot.Find("Laptop Frame"), false);
+            SetRaycastTarget(uiRoot.Find("Desktop"), false);
+            SetRaycastTarget(uiRoot.Find("Desktop/MainMenu"), false);
+            SetRaycastTarget(uiRoot.Find("Desktop/MainMenu/bg_mainmenu"), false);
+        }
+
+        static void SetRaycastTarget(Transform target, bool enabled)
+        {
+            if (target == null)
                 return;
 
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = size;
-            EditorUtility.SetDirty(rect);
+            foreach (Graphic graphic in target.GetComponents<Graphic>())
+            {
+                graphic.raycastTarget = enabled;
+                EditorUtility.SetDirty(graphic);
+            }
         }
 
-        static void StretchToParent(Transform target)
+        static TMP_Text ConfigureClockText(TMP_Text text)
         {
-            if (target is not RectTransform rect)
-                return;
-
-            rect.anchorMin = Vector2.zero;
-            rect.anchorMax = Vector2.one;
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = Vector2.zero;
-            rect.sizeDelta = Vector2.zero;
-            rect.offsetMin = Vector2.zero;
-            rect.offsetMax = Vector2.zero;
-            EditorUtility.SetDirty(rect);
-        }
-
-        static TMP_Text ConfigureClockText(TMP_Text text, Vector2 position)
-        {
-            RectTransform rect = text.rectTransform;
-            rect.anchorMin = new Vector2(0.5f, 0.5f);
-            rect.anchorMax = new Vector2(0.5f, 0.5f);
-            rect.pivot = new Vector2(0.5f, 0.5f);
-            rect.anchoredPosition = position;
-            rect.sizeDelta = new Vector2(200f, 24f);
             text.alignment = TextAlignmentOptions.MidlineRight;
             text.textWrappingMode = TextWrappingModes.NoWrap;
+            EditorUtility.SetDirty(text);
             return text;
         }
 
@@ -559,6 +524,46 @@ namespace IntegratedApps.Editor
                     $"GameObject '{root.name}/{path}' tidak ditemukan. " +
                     "Pastikan nama hierarchy desain belum diubah.");
             return result;
+        }
+
+        static Transform RequireAny(Transform root, params string[] paths)
+        {
+            foreach (string path in paths)
+            {
+                Transform result = root.Find(path);
+                if (result != null)
+                    return result;
+            }
+
+            throw new InvalidOperationException(
+                $"Tidak ada GameObject yang cocok di bawah '{root.name}'. " +
+                $"Nama yang dicari: {string.Join(", ", paths)}.");
+        }
+
+        static Transform FindChildByNames(Transform root, params string[] names)
+        {
+            foreach (string name in names)
+            {
+                Transform result = root.Find(name);
+                if (result != null)
+                    return result;
+            }
+            return null;
+        }
+
+        static TMP_Text RequireText(Transform root, params string[] names)
+        {
+            Transform textTransform = FindChildByNames(root, names);
+            TMP_Text text = textTransform != null
+                ? textTransform.GetComponent<TMP_Text>()
+                : null;
+            if (text == null)
+            {
+                throw new InvalidOperationException(
+                    $"Text jam/tanggal tidak ditemukan di bawah '{root.name}'. " +
+                    $"Nama yang dicari: {string.Join(", ", names)}.");
+            }
+            return text;
         }
 
         static Transform FindDescendant(Transform root, string objectName)

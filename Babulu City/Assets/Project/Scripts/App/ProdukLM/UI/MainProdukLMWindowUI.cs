@@ -178,7 +178,8 @@ namespace ProdukLM
 
             if (selectionDescriptionText != null)
                 selectionDescriptionText.text = hasSelection
-                    ? $"Produk terpilih: {selectedProduct.displayName}\nTekan PILIH untuk menyusun prompt."
+                    ? $"Buat {selectedProduct.displayName} sesuai tujuan, target pengguna, " +
+                      "konten, gaya penyajian, dan fokus AI yang kamu pilih."
                     : "Klik salah satu produk digital di sebelah kanan.";
 
             for (int i = 0; i < productOptions.Length; i++)
