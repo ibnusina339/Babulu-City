@@ -30,6 +30,12 @@ namespace IntegratedApps.Editor
                 if (!scene.IsValid() || !scene.isLoaded)
                     return;
 
+                // Jangan jalankan integrasi otomatis ketika Unity sedang membuka
+                // scene yang belum selesai dimuat atau gagal diparse (misalnya
+                // karena masih memiliki marker merge).
+                if (!scene.GetRootGameObjects().Any(go => go.name == "UI"))
+                    return;
+
                 MainProdukLMWindowUI existing = Resources
                     .FindObjectsOfTypeAll<MainProdukLMWindowUI>()
                     .FirstOrDefault(component => component.gameObject.scene == scene);
