@@ -1,10 +1,16 @@
 fileFormatVersion: 2
-guid: 985537b889fb25f458b59e2c3785259e
+guid: b993eff1fcb6f2f49a05422413179463
 TextureImporter:
   internalIDToNameTable:
   - first:
-      213: -8552493138520810681
-    second: Icon_Dashboard_0
+      213: -4905864730368652871
+    second: spriteIkon2_0
+  - first:
+      213: 8368712701922400070
+    second: spriteIkon2_1
+  - first:
+      213: 926080168621669993
+    second: spriteIkon2_2
   externalObjects: {}
   serializedVersion: 13
   mipmaps:
@@ -51,7 +57,7 @@ TextureImporter:
   spriteMeshType: 1
   alignment: 0
   spritePivot: {x: 0.5, y: 0.5}
-  spritePixelsToUnits: 64
+  spritePixelsToUnits: 32
   spriteBorder: {x: 0, y: 0, z: 0, w: 0}
   spriteGenerateFallbackPhysicsShape: 1
   alphaUsage: 1
@@ -113,23 +119,67 @@ TextureImporter:
     serializedVersion: 2
     sprites:
     - serializedVersion: 2
-      name: Icon_Dashboard_0
+      name: spriteIkon2_0
       rect:
         serializedVersion: 2
         x: 0
-        y: 6
-        width: 64
-        height: 53
+        y: 32
+        width: 32
+        height: 32
       alignment: 0
-      pivot: {x: 0, y: 0}
+      pivot: {x: 0.5, y: 0.5}
       border: {x: 0, y: 0, z: 0, w: 0}
       customData: 
       outline: []
       physicsShape: []
       tessellationDetail: -1
       bones: []
-      spriteID: 74b5086bdc07f4980800000000000000
-      internalID: -8552493138520810681
+      spriteID: 9b94246250edaebb0800000000000000
+      internalID: -4905864730368652871
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spriteIkon2_1
+      rect:
+        serializedVersion: 2
+        x: 32
+        y: 32
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 6475261fcd3a32470800000000000000
+      internalID: 8368712701922400070
+      vertices: []
+      indices: 
+      edges: []
+      weights: []
+    - serializedVersion: 2
+      name: spriteIkon2_2
+      rect:
+        serializedVersion: 2
+        x: 0
+        y: 0
+        width: 32
+        height: 32
+      alignment: 0
+      pivot: {x: 0.5, y: 0.5}
+      border: {x: 0, y: 0, z: 0, w: 0}
+      customData: 
+      outline: []
+      physicsShape: []
+      tessellationDetail: -1
+      bones: []
+      spriteID: 96e7a3cb1091adc00800000000000000
+      internalID: 926080168621669993
       vertices: []
       indices: 
       edges: []
@@ -138,7 +188,7 @@ TextureImporter:
     customData: 
     physicsShape: []
     bones: []
-    spriteID: 
+    spriteID: 4e2b2602cecaf8747a390d60c3d48038
     internalID: 0
     vertices: []
     indices: 
@@ -146,9 +196,13 @@ TextureImporter:
     weights: []
     secondaryTextures: []
     spriteCustomMetadata:
-      entries: []
+      entries:
+      - key: SpriteEditor.SliceSettings
+        value: '{"sliceOnImport":false,"gridCellCount":{"x":1.0,"y":1.0},"gridSpriteSize":{"x":32.0,"y":32.0},"gridSpriteOffset":{"x":0.0,"y":0.0},"gridSpritePadding":{"x":0.0,"y":0.0},"pivot":{"x":0.5,"y":0.5},"pivotPixels":{"x":0.0,"y":0.0},"autoSlicingMethod":0,"spriteAlignment":0,"pivotUnitMode":0,"slicingType":1,"keepEmptyRects":false,"isAlternate":false}'
     nameFileIdTable:
-      Icon_Dashboard_0: -8552493138520810681
+      spriteIkon2_0: -4905864730368652871
+      spriteIkon2_1: 8368712701922400070
+      spriteIkon2_2: 926080168621669993
   mipmapLimitGroupName: 
   pSDRemoveMatte: 0
   userData: 
