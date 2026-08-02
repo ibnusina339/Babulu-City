@@ -18,6 +18,14 @@ namespace LarisID
 
         void Awake()
         {
+            EnsureInitialized();
+        }
+
+        public void EnsureInitialized()
+        {
+            if (Marketplace != null)
+                return;
+
             Marketplace = new LarisMarketplaceService(
                 growingTierRequirement,
                 famousTierRequirement);
@@ -66,6 +74,70 @@ namespace LarisID
         {
             Marketplace.SetPrice(SelectedProduct, requestedPrice, out string message);
             LastMessage = message;
+            NotifyChanged();
+        }
+
+        public void SetProductName(LarisProduct product, string requestedName)
+        {
+            if (product == null)
+                return;
+
+            string value = requestedName?.Trim();
+            if (string.IsNullOrWhiteSpace(value))
+            {
+                LastMessage = "Nama produk tidak boleh kosong.";
+                NotifyChanged();
+                return;
+            }
+
+            product.productName = value;
+            LastMessage = $"Nama produk diubah menjadi '{value}'.";
+            NotifyChanged();
+        }
+
+        public void SetProductPrice(LarisProduct product, int requestedPrice)
+        {
+            Marketplace.SetPrice(product, requestedPrice, out string message);
+            LastMessage = message;
+            NotifyChanged();
+        }
+
+        public void ToggleProductActive(LarisProduct product)
+        {
+            if (product == null)
+                return;
+
+            if (product.status == ProductStatus.Active)
+            {
+                Marketplace.Archive(product);
+                LastMessage = $"'{product.productName}' dinonaktifkan dari toko.";
+            }
+            else
+            {
+                Marketplace.Publish(product, out string message);
+                LastMessage = message;
+            }
+            NotifyChanged();
+        }
+
+        public void DeleteProduct(LarisProduct product)
+        {
+            if (!Marketplace.DeleteProduct(product))
+                return;
+
+            if (SelectedProduct == product)
+                SelectedProduct = null;
+            LastMessage = $"Produk '{product.productName}' dihapus dari library toko.";
+            NotifyChanged();
+        }
+
+        public void SetShopIdentity(string shopName, string shopDescription)
+        {
+            if (!string.IsNullOrWhiteSpace(shopName))
+                Marketplace.ShopName = shopName.Trim();
+            if (!string.IsNullOrWhiteSpace(shopDescription))
+                Marketplace.ShopDescription = shopDescription.Trim();
+            LastMessage = "Profil toko diperbarui.";
             NotifyChanged();
         }
 

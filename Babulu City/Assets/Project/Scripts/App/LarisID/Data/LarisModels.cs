@@ -126,6 +126,7 @@ namespace LarisID
     public class DailyMarketResult
     {
         public int day;
+        public ProductCategory activeTrend;
         public int newImpressions;
         public int newClicks;
         public int newSales;

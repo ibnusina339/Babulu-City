@@ -10,17 +10,21 @@ namespace LarisID
         public const long InitialBalance = 150000;
 
         public string ShopName { get; set; } = "Toko BRIDA";
+        public string ShopDescription { get; set; } =
+            "Produk digital untuk belajar, bekerja, dan berkarya.";
         public long Balance { get; private set; }
         public int Followers { get; private set; }
         public int CurrentDay { get; private set; }
         public ProductCategory ActiveTrend { get; private set; }
         public IReadOnlyList<LarisProduct> Products => products;
+        public IReadOnlyList<DailyMarketResult> DailyHistory => dailyHistory;
         public DailyMarketResult LastDailyResult { get; private set; }
         public int GrowingTierRequirement { get; }
         public int FamousTierRequirement { get; }
         public StorePriceTier StoreTier { get; private set; }
 
         readonly List<LarisProduct> products = new();
+        readonly List<DailyMarketResult> dailyHistory = new();
         int nextProductId;
         int dummyIndex;
 
@@ -64,15 +68,17 @@ namespace LarisID
         public void Reset()
         {
             products.Clear();
+            dailyHistory.Clear();
             Balance = InitialBalance;
             Followers = 0;
             CurrentDay = 1;
             StoreTier = StorePriceTier.Pemula;
-            ActiveTrend = ProductCategory.Education;
+            ActiveTrend = PickTrendForDay(CurrentDay);
             LastDailyResult = null;
             nextProductId = 1;
             dummyIndex = 0;
             ShopName = "Toko BRIDA";
+            ShopDescription = "Produk digital untuk belajar, bekerja, dan berkarya.";
         }
 
         public LarisProduct AddDummyProduct()
@@ -298,6 +304,11 @@ namespace LarisID
                 product.status = ProductStatus.Active;
         }
 
+        public bool DeleteProduct(LarisProduct product)
+        {
+            return product != null && products.Remove(product);
+        }
+
         public void CycleTrend()
         {
             ProductCategory[] categories = (ProductCategory[])Enum.GetValues(typeof(ProductCategory));
@@ -312,6 +323,7 @@ namespace LarisID
             var result = new DailyMarketResult
             {
                 day = simulatedDay,
+                activeTrend = ActiveTrend,
                 previousStoreRating = previousRating
             };
 
@@ -348,10 +360,10 @@ namespace LarisID
             UpdateStoreTier();
             result.currentStoreRating = StoreRating;
             LastDailyResult = result;
+            dailyHistory.Add(result);
 
             CurrentDay++;
-            if (simulatedDay % 3 == 0)
-                CycleTrend();
+            ActiveTrend = PickTrendForDay(CurrentDay);
 
             return result;
         }
@@ -413,5 +425,13 @@ namespace LarisID
             Mathf.Max(1000, Mathf.RoundToInt(value / 1000f) * 1000);
 
         static int ClampStat(int value) => Mathf.Clamp(value, 0, 100);
+
+        static ProductCategory PickTrendForDay(int day)
+        {
+            ProductCategory[] categories =
+                (ProductCategory[])Enum.GetValues(typeof(ProductCategory));
+            var random = new System.Random(4111 + Mathf.Max(1, day) * 1877);
+            return categories[random.Next(0, categories.Length)];
+        }
     }
 }

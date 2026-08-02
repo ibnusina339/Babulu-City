@@ -28,6 +28,7 @@ namespace IntegratedApps
         bool reachedEnd;
 
         public bool ReachedEnd => reachedEnd;
+        public event Action DayEnded;
 
         void Awake()
         {
@@ -72,6 +73,7 @@ namespace IntegratedApps
                 elapsedRealSeconds / Mathf.Max(0.01f, realSecondsPerGameMinute));
             int displayedMinutes = Mathf.Min(startMinutes + elapsedGameMinutes, endMinutes);
 
+            bool wasAtEnd = reachedEnd;
             reachedEnd = displayedMinutes >= endMinutes;
 
             int displayHour = displayedMinutes / 60;
@@ -87,6 +89,9 @@ namespace IntegratedApps
 
             SetTexts(clockTexts, clockValue);
             SetTexts(dateTexts, dateValue);
+
+            if (!wasAtEnd && reachedEnd)
+                DayEnded?.Invoke();
         }
 
         static void SetTexts(TMP_Text[] targets, string value)

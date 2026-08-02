@@ -44,14 +44,7 @@ namespace LarisID
             new("UMKM Naik", PromotionPlatform.Instagram, 125000, 4, 72),
             new("Ruang Desain ID", PromotionPlatform.Instagram, 280000, 5, 125),
             new("Belajar Bareng", PromotionPlatform.Instagram, 85000, 3, 55),
-            new("Daily Template", PromotionPlatform.Instagram, 190000, 4, 95),
-
-            new("Kak Dira Digital", PromotionPlatform.TikTok, 25000, 2, 30),
-            new("FYP Pintar", PromotionPlatform.TikTok, 60000, 2, 52),
-            new("TemplateHarian", PromotionPlatform.TikTok, 110000, 3, 78),
-            new("Viral Produktif", PromotionPlatform.TikTok, 320000, 4, 155),
-            new("Guru Online", PromotionPlatform.TikTok, 75000, 3, 57),
-            new("Bisnis 60 Detik", PromotionPlatform.TikTok, 210000, 4, 108)
+            new("Daily Template", PromotionPlatform.Instagram, 190000, 4, 95)
         };
 
         public static IReadOnlyList<PromoterOffer> Generate(int day)
