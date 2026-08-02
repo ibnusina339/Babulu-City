@@ -9,6 +9,7 @@ namespace ProdukLM
     // Butuh Image (buat area drop) dan TMP_Text (buat nampilin nama kartu terisi).
     public class SlotUI : MonoBehaviour, IDropHandler
     {
+        ProjectFlowManager flow;
         public SlotType slotType;
         public TMP_Text label;
         public GameObject activeIndicator;
@@ -22,45 +23,57 @@ namespace ProdukLM
 
         void OnEnable()
         {
-            if (ProjectFlowManager.Instance == null)
-            {
-                Debug.LogError(
-                    $"{nameof(SlotUI)} pada '{name}' tidak menemukan {nameof(ProjectFlowManager)}.",
-                    this);
-                return;
-            }
-
-            ProjectFlowManager.Instance.OnSlotChanged += HandleSlotChanged;
-            HandleSlotChanged();
+            ProjectFlowManager.OnInstanceReady += Bind;
+            Bind(ProjectFlowManager.Instance);
         }
 
         void OnDisable()
         {
-            if (ProjectFlowManager.Instance != null)
-                ProjectFlowManager.Instance.OnSlotChanged -= HandleSlotChanged;
+            ProjectFlowManager.OnInstanceReady -= Bind;
+            Unbind();
+        }
+
+        void Bind(ProjectFlowManager manager)
+        {
+            if (manager == null || flow == manager)
+                return;
+
+            Unbind();
+            flow = manager;
+            flow.OnSlotChanged += HandleSlotChanged;
+            HandleSlotChanged();
+        }
+
+        void Unbind()
+        {
+            if (flow == null)
+                return;
+
+            flow.OnSlotChanged -= HandleSlotChanged;
+            flow = null;
         }
 
         void HandleSlotChanged()
         {
-            if (ProjectFlowManager.Instance != null)
-                Refresh(ProjectFlowManager.Instance.State);
+            if (flow != null)
+                Refresh(flow.State);
         }
 
         public void OnDrop(PointerEventData eventData)
         {
             var cardUI = eventData.pointerDrag?.GetComponent<CardUI>();
-            if (cardUI == null || cardUI.data == null || ProjectFlowManager.Instance == null)
+            if (cardUI == null || cardUI.data == null || flow == null)
                 return;
 
             if (cardUI.data.slotType != slotType)
                 return;
 
             // Mencegah slot dilompati atau ditimpa lewat drag yang tidak sengaja.
-            if (ProjectFlowManager.Instance.State.GetNextEmptySlot() != slotType)
+            if (flow.State.GetNextEmptySlot() != slotType)
                 return;
 
             cardUI.AcceptDrop();
-            ProjectFlowManager.Instance.AssignCardToSlot(slotType, cardUI.data);
+            flow.AssignCardToSlot(slotType, cardUI.data);
         }
 
         public void Refresh(ProjectState state)

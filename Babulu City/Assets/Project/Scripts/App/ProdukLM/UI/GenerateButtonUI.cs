@@ -7,38 +7,68 @@ namespace ProdukLM
     [RequireComponent(typeof(Button))]
     public class GenerateButtonUI : MonoBehaviour
     {
+        ProjectFlowManager flow;
+        Button button;
+
         void Awake()
         {
-            GetComponent<Button>().onClick.AddListener(OnClick);
+            button = GetComponent<Button>();
+            button.onClick.AddListener(OnClick);
         }
 
         void OnEnable()
         {
-            ProjectFlowManager.Instance.OnSlotChanged += RefreshInteractable;
-            ProjectFlowManager.Instance.OnDailyLimitChanged += RefreshInteractable;
-            RefreshInteractable();
+            ProjectFlowManager.OnInstanceReady += Bind;
+            Bind(ProjectFlowManager.Instance);
         }
 
         void OnDisable()
         {
-            if (ProjectFlowManager.Instance != null)
-            {
-                ProjectFlowManager.Instance.OnSlotChanged -= RefreshInteractable;
-                ProjectFlowManager.Instance.OnDailyLimitChanged -= RefreshInteractable;
-            }
+            ProjectFlowManager.OnInstanceReady -= Bind;
+            Unbind();
+        }
+
+        void OnDestroy()
+        {
+            if (button != null)
+                button.onClick.RemoveListener(OnClick);
+        }
+
+        void Bind(ProjectFlowManager manager)
+        {
+            if (manager == null || flow == manager)
+                return;
+
+            Unbind();
+            flow = manager;
+            flow.OnSlotChanged += RefreshInteractable;
+            flow.OnDailyLimitChanged += RefreshInteractable;
+            RefreshInteractable();
+        }
+
+        void Unbind()
+        {
+            if (flow == null)
+                return;
+
+            flow.OnSlotChanged -= RefreshInteractable;
+            flow.OnDailyLimitChanged -= RefreshInteractable;
+            flow = null;
         }
 
         void OnClick()
         {
-            ProjectFlowManager.Instance.TryGenerate();
+            flow?.TryGenerate();
         }
 
         // Tombol cuma aktif/kepencet kalau 6 slot udah penuh
         void RefreshInteractable()
         {
-            bool allFilled = ProjectFlowManager.Instance.State.GetNextEmptySlot() == null;
-            GetComponent<Button>().interactable =
-                allFilled && ProjectFlowManager.Instance.CanCreateProductToday;
+            if (button == null)
+                button = GetComponent<Button>();
+
+            bool allFilled = flow != null && flow.State.GetNextEmptySlot() == null;
+            button.interactable = allFilled && flow != null && flow.CanCreateProductToday;
         }
     }
 }

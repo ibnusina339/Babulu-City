@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using IntegratedApps;
+using ProdukLM;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -97,6 +98,7 @@ namespace LarisID
 
         TMP_Text promotionProductName;
         TMP_Text promotionProductPrice;
+        Image promotionProductIcon;
         TMP_Text promotionCountText;
         RectTransform promotionContent;
         TMP_Text promotionConfirmationTitle;
@@ -350,6 +352,7 @@ namespace LarisID
             Transform productPanel = FindNamed(page, "Paneldata.frame");
             promotionProductName = FindText(productPanel, "NamaProduk.TXT");
             promotionProductPrice = FindText(productPanel, "HargaProduk.TXT");
+            promotionProductIcon = FindNamed(productPanel, "ikon Produk", "produk.icon")?.GetComponent<Image>();
 
             previousPromotionProductButton = BindClick(
                 FindNamed(productPanel, "PreviousProductButton", "minus.Frame"),
@@ -539,6 +542,8 @@ namespace LarisID
         void BindProductRow(ProductRow row, LarisProduct product)
         {
             SetText(row.nameText, product.productName);
+            if (row.nameText != null)
+                row.nameText.alignment = TextAlignmentOptions.Center;
             SetText(row.categoryText, CategoryName(product.category));
             SetText(row.priceText, Rupiah(product.price));
             SetText(row.salesText, product.sales.ToString());
@@ -561,7 +566,13 @@ namespace LarisID
             if (row.nameInput != null)
             {
                 row.nameInput.onEndEdit.RemoveAllListeners();
-                row.nameInput.onEndEdit.AddListener(value => manager.SetProductName(product, value));
+                row.nameInput.onEndEdit.AddListener(value =>
+                {
+                    manager.SetProductName(product, value);
+                    if (row.nameText != null)
+                        row.nameText.alignment = TextAlignmentOptions.Center;
+                    row.nameInput.SetTextWithoutNotify(product.productName);
+                });
             }
             if (row.priceInput != null)
             {
@@ -587,8 +598,16 @@ namespace LarisID
                 promotionProductIndex = Mathf.Clamp(promotionProductIndex, 0, eligible.Count - 1);
 
             LarisProduct product = eligible.Count > 0 ? eligible[promotionProductIndex] : null;
-            SetText(promotionProductName, product != null ? product.productName : "Belum ada produk terjual");
+            SetText(promotionProductName, product != null ? product.productName : "Belum ada produk aktif");
             SetText(promotionProductPrice, product != null ? Rupiah(product.price) : "Harga Rp -");
+            if (promotionProductIcon != null)
+            {
+                promotionProductIcon.sprite = ResolveProductIcon(product);
+                promotionProductIcon.preserveAspect = true;
+                promotionProductIcon.color = Color.white;
+                promotionProductIcon.gameObject.SetActive(
+                    product != null && promotionProductIcon.sprite != null);
+            }
             SetText(promotionCountText, $"'{eligible.Count} PRODUK");
             if (previousPromotionProductButton != null)
                 previousPromotionProductButton.interactable = eligible.Count > 1;
@@ -850,7 +869,7 @@ namespace LarisID
         List<LarisProduct> EligiblePromotionProducts()
         {
             return manager.Marketplace.Products
-                .Where(item => item.status == ProductStatus.Active && item.sales > 0)
+                .Where(item => item.status == ProductStatus.Active)
                 .ToList();
         }
 
@@ -898,6 +917,8 @@ namespace LarisID
             if (input == null) input = host.gameObject.AddComponent<TMP_InputField>();
             input.textViewport = text.rectTransform;
             input.textComponent = text;
+            text.raycastTarget = true;
+            input.targetGraphic = host.GetComponent<Graphic>() ?? text;
             input.contentType = contentType;
             input.lineType = lineType;
             input.richText = false;
@@ -905,6 +926,19 @@ namespace LarisID
             input.caretColor = Color.white;
             input.selectionColor = new Color(.25f, .65f, 1f, .45f);
             return input;
+        }
+
+        static Sprite ResolveProductIcon(LarisProduct product)
+        {
+            if (product == null || string.IsNullOrWhiteSpace(product.iconKey))
+                return null;
+
+            MainProdukLMWindowUI produkWindow = UnityEngine.Object.FindAnyObjectByType<MainProdukLMWindowUI>(
+                FindObjectsInactive.Include);
+            MainProdukLMWindowUI.ProductOption option = produkWindow?.productOptions?
+                .FirstOrDefault(item => item?.card != null &&
+                    item.card.cardId.Equals(product.iconKey, StringComparison.OrdinalIgnoreCase));
+            return option?.previewIcon ?? option?.card?.icon;
         }
 
         static void ActivateInput(TMP_InputField input)
