@@ -18,7 +18,8 @@ namespace IntegratedApps
         [Header("Waktu Dummy")]
         [Range(0, 23)] public int startHour = 20;
         [Range(1, 24)] public int endHour = 24;
-        [Min(0.01f)] public float realSecondsPerGameMinute = 7.5f;
+        [Tooltip("2 detik = rentang 20.00-00.00 selesai dalam 8 menit nyata.")]
+        [Min(0.01f)] public float realSecondsPerGameMinute = 2f;
         public string startDate = "30/07/2026";
         public bool runAutomatically = true;
         public bool useUnscaledTime = true;
@@ -29,6 +30,16 @@ namespace IntegratedApps
 
         public bool ReachedEnd => reachedEnd;
         public event Action DayEnded;
+
+        public int CurrentGameMinutes
+        {
+            get
+            {
+                int elapsedGameMinutes = Mathf.FloorToInt(
+                    elapsedRealSeconds / Mathf.Max(0.01f, realSecondsPerGameMinute));
+                return Mathf.Min(startHour * 60 + elapsedGameMinutes, endHour * 60);
+            }
+        }
 
         void Awake()
         {
@@ -62,6 +73,19 @@ namespace IntegratedApps
                 parsedStartDate = new DateTime(2026, 7, 30);
             }
 
+            RefreshDisplay();
+        }
+
+        /// <summary>
+        /// Memajukan jam permainan untuk aktivitas yang memakan waktu,
+        /// misalnya sesi belajar VentraMeet.
+        /// </summary>
+        public void AdvanceHours(float hours)
+        {
+            if (hours <= 0f || reachedEnd)
+                return;
+
+            elapsedRealSeconds += hours * 60f * Mathf.Max(0.01f, realSecondsPerGameMinute);
             RefreshDisplay();
         }
 
