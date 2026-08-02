@@ -324,7 +324,7 @@ namespace IntegratedApps.Editor
             clock.dateTexts = new[] { dateText };
             clock.startHour = 20;
             clock.endHour = 24;
-            clock.realSecondsPerGameMinute = 7.5f;
+            clock.realSecondsPerGameMinute = 2f;
             clock.startDate = "30/07/2026";
             clock.runAutomatically = true;
             clock.useUnscaledTime = true;
