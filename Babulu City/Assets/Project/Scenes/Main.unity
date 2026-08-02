@@ -4454,6 +4454,67 @@ MonoBehaviour:
   m_FillOrigin: 0
   m_UseSpriteMesh: 0
   m_PixelsPerUnitMultiplier: 1
+--- !u!1001 &721554544
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 944485319968787562, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_Name
+      value: PlayerTest
+      objectReference: {fileID: 0}
+    - target: {fileID: 944485319968787562, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_Layer
+      value: 8
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.95
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: -1.17
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8290192327565853559, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 6a87360281b9b3843821889dba8758bd, type: 3}
 --- !u!1 &730684270
 GameObject:
   m_ObjectHideFlags: 0
@@ -4639,7 +4700,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &733149716
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9951,6 +10012,7 @@ GameObject:
   - component: {fileID: 1671539254}
   - component: {fileID: 1671539256}
   - component: {fileID: 1671539255}
+  - component: {fileID: 910000000223456789}
   m_Layer: 0
   m_Name: Laptop
   m_TagString: Untagged
@@ -14328,12 +14390,29 @@ MonoBehaviour:
   m_EditorClassIdentifier: Assembly-CSharp::BabuluCity.Audio.CowMooButton
   mooClip: {fileID: 8300000, guid: e22a3c2ca380f1a4d96ba05ed494af28, type: 3}
   volume: 1
+--- !u!114 &910000000223456789
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1671539253}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b7e60ab6c50c4ce88439dca1d17174c8, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::LaptopProximityController
+  desktopRoot: {fileID: 733149715}
+  interactionRadius: 2.25
+  fadeDuration: 0.35
+  fadeColor: {r: 0, g: 0, b: 0, a: 1}
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
   - {fileID: 920329290}
   - {fileID: 2124912470}
+  - {fileID: 721554544}
   - {fileID: 1189439751}
   - {fileID: 733149719}
   - {fileID: 1762956278}
