@@ -17,9 +17,14 @@ namespace ProdukLM
         [Header("Visual State")]
         public Graphic backgroundGraphic;
         public Outline focusOutline;
-        public Color emptyColor = new Color(0.22f, 0.23f, 0.25f, 1f);
-        public Color filledColor = new Color(0.12f, 0.25f, 0.42f, 1f);
-        public Color focusOutlineColor = new Color(0.55f, 0.85f, 1f, 1f);
+        public Color emptyColor = new Color(0.32f, 0.33f, 0.35f, 0.9f);
+        public Color focusedColor = new Color(0.08f, 0.40f, 0.70f, 1f);
+        // Putih mempertahankan warna asli sprite, sama seperti CardPrefab.
+        public Color filledColor = Color.white;
+        public Color emptyTextColor = new Color(0.72f, 0.73f, 0.75f, 1f);
+        public Color focusedTextColor = Color.white;
+        public Color filledTextColor = Color.white;
+        public Color focusOutlineColor = new Color(0.35f, 0.82f, 1f, 1f);
 
         void OnEnable()
         {
@@ -87,11 +92,23 @@ namespace ProdukLM
             bool isNextEmpty = state.GetNextEmptySlot() == slotType;
 
             if (backgroundGraphic != null)
-                backgroundGraphic.color = filled ? filledColor : emptyColor;
+                backgroundGraphic.color = filled
+                    ? filledColor
+                    : isNextEmpty ? focusedColor : emptyColor;
+
+            if (label != null)
+            {
+                label.color = filled
+                    ? filledTextColor
+                    : isNextEmpty ? focusedTextColor : emptyTextColor;
+                label.fontStyle = isNextEmpty ? FontStyles.Bold : FontStyles.Normal;
+            }
 
             if (focusOutline != null)
             {
                 focusOutline.effectColor = focusOutlineColor;
+                focusOutline.effectDistance = new Vector2(4f, -4f);
+                focusOutline.useGraphicAlpha = false;
                 focusOutline.enabled = isNextEmpty;
             }
 

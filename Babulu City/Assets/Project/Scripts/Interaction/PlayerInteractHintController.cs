@@ -28,15 +28,21 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     bool canSleep;
     bool sleeping;
     CanvasGroup sleepFade;
+    Vector2Int lastHintResolution;
 
     void Awake()
     {
         ResolveReferences();
+        ConfigureHintCanvas();
         HideAll();
     }
 
     void Update()
     {
+        Vector2Int resolution = new Vector2Int(Screen.width, Screen.height);
+        if (resolution != lastHintResolution)
+            ConfigureHintCanvas();
+
         Vector2 playerPosition = transform.position;
         bool desktopOpened = laptopController != null && laptopController.IsLaptopOpened;
 
@@ -146,6 +152,41 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         laptopHint ??= FindTransform("Buka Laptop")?.gameObject;
         calendarHint ??= FindTransform("Lihat Kalender")?.gameObject;
         bedHint ??= FindTransform("Tidur")?.gameObject;
+    }
+
+    void ConfigureHintCanvas()
+    {
+        GameObject hint = laptopHint ?? calendarHint ?? bedHint;
+        Canvas canvas = hint != null ? hint.GetComponentInParent<Canvas>(true) : null;
+        CanvasScaler scaler = canvas != null ? canvas.GetComponent<CanvasScaler>() : null;
+        if (scaler == null)
+            return;
+
+        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
+        scaler.referenceResolution = new Vector2(1920f, 1080f);
+        scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
+        scaler.matchWidthOrHeight = 0.5f;
+
+        // Semua hint menempel di kiri bawah dan mengikuti safe area. Dengan
+        // anchor ini, perubahan aspect ratio tidak mendorong hint ke tengah.
+        float scale = Mathf.Max(0.01f, scaler.scaleFactor);
+        Rect safe = Screen.safeArea;
+        Vector2 safeBottomLeft = new Vector2(safe.xMin / scale, safe.yMin / scale);
+        PositionHint(laptopHint, safeBottomLeft);
+        PositionHint(calendarHint, safeBottomLeft);
+        PositionHint(bedHint, safeBottomLeft);
+        lastHintResolution = new Vector2Int(Screen.width, Screen.height);
+    }
+
+    static void PositionHint(GameObject hint, Vector2 safeBottomLeft)
+    {
+        if (hint == null || hint.transform is not RectTransform rect)
+            return;
+
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.zero;
+        rect.pivot = new Vector2(0f, 0f);
+        rect.anchoredPosition = safeBottomLeft + new Vector2(28f, 82f);
     }
 
     static Collider2D FindPreferredCollider(Transform root, string preferredName, bool includeRoot)

@@ -148,7 +148,9 @@ namespace ProdukLM
 
         void Retry()
         {
-            ProjectFlowManager.Instance?.BackOneStep();
+            // "Buat Lagi" adalah proyek baru, jadi pilihan tipe produk dimulai
+            // kembali dari Tahap 1 dan state hasil sebelumnya dibersihkan penuh.
+            ProjectFlowManager.Instance?.BackToStart();
         }
 
         void CloseWindow()
@@ -307,14 +309,34 @@ namespace ProdukLM
 
             Transform[] blocks = progressFrame.GetComponentsInChildren<Transform>(true)
                 .Where(item => item.name.StartsWith("BAR", StringComparison.OrdinalIgnoreCase))
-                .Take(24)
                 .ToArray();
-            int activeBlocks = Mathf.Clamp(
-                Mathf.RoundToInt(Mathf.Clamp(value, 0, 100) / 100f * blocks.Length),
-                0,
-                blocks.Length);
-            for (int i = 0; i < blocks.Length; i++)
-                blocks[i].gameObject.SetActive(i < activeBlocks);
+            if (blocks.Length == 0) return;
+
+            // Gunakan satu Image sebagai fill bar kontinu. LayoutGroup lama
+            // dimatikan supaya lebar fill dapat mengikuti persentase secara bebas.
+            Transform fill = blocks[0];
+            Transform fillParent = fill.parent;
+            LayoutGroup layout = fillParent.GetComponent<LayoutGroup>();
+            if (layout != null) layout.enabled = false;
+
+            RectMask2D mask = fillParent.GetComponent<RectMask2D>();
+            if (mask == null)
+                mask = fillParent.gameObject.AddComponent<RectMask2D>();
+            mask.padding = Vector4.zero;
+
+            for (int i = 1; i < blocks.Length; i++)
+                blocks[i].gameObject.SetActive(false);
+
+            RectTransform fillRect = fill as RectTransform;
+            if (fillRect == null) return;
+
+            float normalized = Mathf.Clamp01(value / 100f);
+            fill.gameObject.SetActive(normalized > 0f);
+            fillRect.anchorMin = Vector2.zero;
+            fillRect.anchorMax = new Vector2(normalized, 1f);
+            fillRect.pivot = new Vector2(0f, 0.5f);
+            fillRect.offsetMin = new Vector2(1f, 1f);
+            fillRect.offsetMax = new Vector2(-1f, -1f);
         }
 
         Transform Find(string name) => GetComponentsInChildren<Transform>(true)

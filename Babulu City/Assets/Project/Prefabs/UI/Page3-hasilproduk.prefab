@@ -1873,6 +1873,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1038462513642510804}
+  - component: {fileID: 919900000000000001}
   m_Layer: 5
   m_Name: Page3-hasilproduk
   m_TagString: Untagged
@@ -1903,6 +1904,18 @@ RectTransform:
   m_AnchoredPosition: {x: 0, y: 0}
   m_SizeDelta: {x: 100, y: 100}
   m_Pivot: {x: 0.5, y: 0.5}
+--- !u!114 &919900000000000001
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4018085831937017868}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 14742bb670a40d34a85c6a3f5f65f848, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.ProdukLMStage3UI
 --- !u!1 &4045377723665802836
 GameObject:
   m_ObjectHideFlags: 0

@@ -164,6 +164,23 @@ namespace ProdukLM
             resultPanel.SetActive(false);
             slotAndLibraryPanel.SetActive(false);
             productTypeSelectPanel.SetActive(true);
+            NotifySlotChanged();
+        }
+
+        // Mengosongkan lima pilihan prompt tanpa membuang tipe produk.
+        // Dipakai tombol Reset di Tahap 2 agar pemain dapat menyusun ulang prompt.
+        public void ResetPromptSlots()
+        {
+            CardData productType = State.GetCard(SlotType.ProductType);
+            State = new ProjectState();
+            if (productType != null)
+                State.SetCard(SlotType.ProductType, productType);
+
+            LastResult = default;
+            LastFeedback.Clear();
+            HasGeneratedResult = false;
+            LastResultSaved = false;
+            NotifySlotChanged();
         }
 
         // Tahap 3 -> Tahap 2, atau Tahap 2 -> Tahap 1 sekaligus membatalkan project.

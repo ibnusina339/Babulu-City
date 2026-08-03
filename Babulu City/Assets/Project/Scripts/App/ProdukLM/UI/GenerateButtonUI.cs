@@ -13,13 +13,26 @@ namespace ProdukLM
         void Awake()
         {
             button = GetComponent<Button>();
+            button.targetGraphic ??= GetComponent<Graphic>();
+            if (button.targetGraphic != null)
+                button.targetGraphic.raycastTarget = true;
             button.onClick.AddListener(OnClick);
         }
 
         void OnEnable()
         {
+            // Option Now dan Reset ditambahkan belakangan ke hierarchy. Pastikan
+            // visual transparan milik keduanya tidak menutup raycast tombol Send.
+            transform.SetAsLastSibling();
             ProjectFlowManager.OnInstanceReady += Bind;
-            Bind(ProjectFlowManager.Instance);
+            Bind(GetComponentInParent<ProjectFlowManager>(true) ?? ProjectFlowManager.Instance);
+        }
+
+        void LateUpdate()
+        {
+            // Menjaga state tetap sinkron meski perubahan hierarchy/desain
+            // membuat event slot terlewat ketika panel sempat nonaktif.
+            RefreshInteractable();
         }
 
         void OnDisable()
@@ -58,7 +71,35 @@ namespace ProdukLM
 
         void OnClick()
         {
-            flow?.TryGenerate();
+            // Ambil manager dari window yang sama setiap klik. Ini mencegah
+            // tombol terhubung ke manager scene testing lain yang kebetulan
+            // sedang terbuka secara additive di Editor.
+            ProjectFlowManager localFlow = GetComponentInParent<ProjectFlowManager>(true);
+            if (localFlow != null && localFlow != flow)
+                Bind(localFlow);
+
+            if (flow == null)
+            {
+                Debug.LogError("Send ProdukLM tidak menemukan ProjectFlowManager pada window yang sama.", this);
+                return;
+            }
+
+            if (flow.State.GetNextEmptySlot() != null)
+            {
+                Debug.LogWarning($"Generate ditolak: slot {flow.State.GetNextEmptySlot()} belum terisi.", this);
+                return;
+            }
+
+            if (!flow.CanCreateProductToday)
+            {
+                Debug.LogWarning(
+                    $"Generate ditolak: limit harian habis ({flow.ProductsCreatedToday}/{flow.DailyProductLimit}).",
+                    this);
+                return;
+            }
+
+            if (!flow.TryGenerate())
+                Debug.LogWarning("Generate ProdukLM ditolak oleh ProjectFlowManager.", this);
         }
 
         // Tombol cuma aktif/kepencet kalau 6 slot udah penuh
@@ -68,7 +109,10 @@ namespace ProdukLM
                 button = GetComponent<Button>();
 
             bool allFilled = flow != null && flow.State.GetNextEmptySlot() == null;
-            button.interactable = allFilled && flow != null && flow.CanCreateProductToday;
+            // Send tetap bisa menerima klik ketika prompt lengkap. TryGenerate()
+            // tetap menjadi sumber validasi limit harian dan tidak akan
+            // mengurangi kuota bila limit sudah habis.
+            button.interactable = allFilled;
         }
     }
 }
