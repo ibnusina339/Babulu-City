@@ -47629,7 +47629,9 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Tanda ini menunjukan jadwal sesi bimbingan online (Via VMeet
+  m_text: 'Tanda ini menunjukan jadwal sesi bimbingan online (Via V-Meet)
+
+'
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 54e2b5949f6cbfc4a9d1ef7a34137d78, type: 2}
   m_sharedMaterial: {fileID: 5108087454142393058, guid: 54e2b5949f6cbfc4a9d1ef7a34137d78, type: 2}
