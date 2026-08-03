@@ -7,6 +7,7 @@ namespace ProdukLM
     public class DailyLimitUI : MonoBehaviour
     {
         TMP_Text label;
+        ProjectFlowManager flow;
 
         void Awake()
         {
@@ -15,21 +16,14 @@ namespace ProdukLM
 
         void OnEnable()
         {
-            if (ProjectFlowManager.Instance == null)
-                return;
-
-            ProjectFlowManager.Instance.OnDailyLimitChanged += Refresh;
-            ProjectFlowManager.Instance.OnGenerationBlocked += ShowBlockedMessage;
-            Refresh();
+            ProjectFlowManager.OnInstanceReady += Bind;
+            Bind(GetComponentInParent<ProjectFlowManager>(true) ?? ProjectFlowManager.Instance);
         }
 
         void OnDisable()
         {
-            if (ProjectFlowManager.Instance == null)
-                return;
-
-            ProjectFlowManager.Instance.OnDailyLimitChanged -= Refresh;
-            ProjectFlowManager.Instance.OnGenerationBlocked -= ShowBlockedMessage;
+            ProjectFlowManager.OnInstanceReady -= Bind;
+            Unbind();
         }
 
         void OnApplicationFocus(bool hasFocus)
@@ -38,22 +32,59 @@ namespace ProdukLM
                 Refresh();
         }
 
+        void Bind(ProjectFlowManager manager)
+        {
+            if (manager == null || manager == flow)
+                return;
+
+            Unbind();
+            flow = manager;
+            flow.OnDailyLimitChanged += Refresh;
+            flow.OnAITierChanged += Refresh;
+            flow.OnGenerationBlocked += ShowBlockedMessage;
+            Refresh();
+        }
+
+        void Unbind()
+        {
+            if (flow != null)
+            {
+                flow.OnDailyLimitChanged -= Refresh;
+                flow.OnAITierChanged -= Refresh;
+                flow.OnGenerationBlocked -= ShowBlockedMessage;
+            }
+
+            flow = null;
+        }
+
         void Refresh()
         {
-            var flow = ProjectFlowManager.Instance;
             if (flow == null || label == null)
                 return;
 
-            int remaining = flow.RemainingProductsToday;
-            label.text = remaining > 0
-                ? $"AI {flow.CurrentTier} • Sisa produksi: {remaining}/{flow.DailyProductLimit}"
-                : $"AI {flow.CurrentTier} • Limit harian habis: 0/{flow.DailyProductLimit}";
+            label.text = $"Limit Produk: {flow.RemainingProductsToday}/{flow.DailyProductLimit}";
         }
 
-        void ShowBlockedMessage(string message)
+        void ShowBlockedMessage(string _)
         {
-            if (label != null)
-                label.text = message;
+            Refresh();
+        }
+    }
+
+    static class DailyLimitUIBootstrap
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Install()
+        {
+            foreach (TMP_Text text in Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include))
+            {
+                if (!text.text.TrimStart().StartsWith("Limit Produk", System.StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (text.GetComponentInParent<ProjectFlowManager>(true) == null)
+                    continue;
+                if (text.GetComponent<DailyLimitUI>() == null)
+                    text.gameObject.AddComponent<DailyLimitUI>();
+            }
         }
     }
 }

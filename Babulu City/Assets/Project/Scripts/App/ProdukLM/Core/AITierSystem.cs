@@ -81,5 +81,18 @@ namespace ProdukLM
             PlayerPrefs.SetInt(DailyCountKey, 0);
             PlayerPrefs.Save();
         }
+
+        // Data permainan saat ini memang hanya berlaku selama sesi scene aktif.
+        // Reset sekali ketika Play dimulai agar sisa pengujian sebelumnya tidak
+        // dianggap sebagai pemakaian limit pada permainan baru.
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        static void ResetForNewPlaySession()
+        {
+            PlayerPrefs.SetString(
+                DailyDateKey,
+                DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            PlayerPrefs.SetInt(DailyCountKey, 0);
+            PlayerPrefs.Save();
+        }
     }
 }

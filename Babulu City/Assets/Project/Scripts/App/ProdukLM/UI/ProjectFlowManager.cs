@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
@@ -10,13 +9,17 @@ namespace ProdukLM
     // Taruh script ini di satu GameObject kosong, misal "GameManager".
     // Semua script lain (SlotUI, CardUI, CardLibraryManager, dst) manggil
     // ProjectFlowManager.Instance buat baca/ubah state.
+    [DefaultExecutionOrder(-1000)]
     public class ProjectFlowManager : MonoBehaviour
     {
         public static ProjectFlowManager Instance { get; private set; }
+        public static event Action<ProjectFlowManager> OnInstanceReady;
 
         public ProjectState State { get; private set; } = new ProjectState();
         public StatsResult LastResult { get; private set; }
         public List<string> LastFeedback { get; private set; } = new List<string>();
+        public bool HasGeneratedResult { get; private set; }
+        public bool LastResultSaved { get; private set; }
 
         [Header("Tier AI")]
         [SerializeField] AITier currentTier = AITier.Free;
@@ -82,6 +85,7 @@ namespace ProdukLM
 
             Instance = this;
             DailyGenerationCounter.EnsureCurrent();
+            OnInstanceReady?.Invoke(this);
         }
 
         void OnDestroy()
@@ -114,16 +118,6 @@ namespace ProdukLM
         {
             State.SetCard(slot, card);
             NotifySlotChanged();
-
-            if (State.GetNextEmptySlot() == null)
-                StartCoroutine(GenerateNextFrame());
-        }
-
-        IEnumerator GenerateNextFrame()
-        {
-            // Biarkan OnEndDrag membersihkan kartu yang dipilih lebih dulu.
-            yield return null;
-            TryGenerate();
         }
 
         // Dipanggil dari tombol Generate. Cuma valid kalau 6 slot udah penuh.
@@ -147,6 +141,8 @@ namespace ProdukLM
                 StatsCalculator.Calculate(State),
                 GetCurrentQualityBoost());
             LastFeedback = FeedbackGenerator.Generate(State);
+            HasGeneratedResult = true;
+            LastResultSaved = false;
             RegisterProductCreated();
 
             slotAndLibraryPanel.SetActive(false);
@@ -162,10 +158,29 @@ namespace ProdukLM
             State = new ProjectState();
             LastResult = default;
             LastFeedback.Clear();
+            HasGeneratedResult = false;
+            LastResultSaved = false;
 
             resultPanel.SetActive(false);
             slotAndLibraryPanel.SetActive(false);
             productTypeSelectPanel.SetActive(true);
+            NotifySlotChanged();
+        }
+
+        // Mengosongkan lima pilihan prompt tanpa membuang tipe produk.
+        // Dipakai tombol Reset di Tahap 2 agar pemain dapat menyusun ulang prompt.
+        public void ResetPromptSlots()
+        {
+            CardData productType = State.GetCard(SlotType.ProductType);
+            State = new ProjectState();
+            if (productType != null)
+                State.SetCard(SlotType.ProductType, productType);
+
+            LastResult = default;
+            LastFeedback.Clear();
+            HasGeneratedResult = false;
+            LastResultSaved = false;
+            NotifySlotChanged();
         }
 
         // Tahap 3 -> Tahap 2, atau Tahap 2 -> Tahap 1 sekaligus membatalkan project.
@@ -194,6 +209,32 @@ namespace ProdukLM
             OnDailyLimitChanged?.Invoke();
         }
 
+        public void MarkLastResultSaved()
+        {
+            if (!HasGeneratedResult)
+                return;
+
+            LastResultSaved = true;
+        }
+
+        public void BeginNewGameDay()
+        {
+            DailyGenerationCounter.ResetForTesting();
+            OnDailyLimitChanged?.Invoke();
+
+            // Hasil yang belum masuk library Laris.ID tidak bertahan ke hari berikutnya.
+            State = new ProjectState();
+            LastResult = default;
+            LastFeedback.Clear();
+            HasGeneratedResult = false;
+            LastResultSaved = false;
+
+            if (resultPanel != null) resultPanel.SetActive(false);
+            if (slotAndLibraryPanel != null) slotAndLibraryPanel.SetActive(false);
+            if (productTypeSelectPanel != null) productTypeSelectPanel.SetActive(true);
+            NotifySlotChanged();
+        }
+
         void NotifySlotChanged()
         {
             OnSlotChanged?.Invoke();
@@ -206,6 +247,8 @@ namespace ProdukLM
             State = new ProjectState();
             LastResult = default;
             LastFeedback.Clear();
+            HasGeneratedResult = false;
+            LastResultSaved = false;
         }
 
         void RegisterProductCreated()

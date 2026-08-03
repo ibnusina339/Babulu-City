@@ -32,19 +32,35 @@ namespace LarisID
 
         static readonly Profile[] Profiles =
         {
-            new("Raka Belajar", PromotionPlatform.YouTube, 45000, 3, 35),
-            new("Tech Santai", PromotionPlatform.YouTube, 90000, 4, 58),
-            new("Bisnis Bareng", PromotionPlatform.YouTube, 180000, 5, 92),
-            new("Kelas Digital TV", PromotionPlatform.YouTube, 360000, 6, 145),
-            new("Creator Kampus", PromotionPlatform.YouTube, 70000, 3, 48),
-            new("Studio Produktif", PromotionPlatform.YouTube, 240000, 5, 115),
+            new("ululalbabinfo", PromotionPlatform.YouTube, 35000, 2, 24),
+            new("laillahhturah", PromotionPlatform.YouTube, 50000, 3, 32),
+            new("pejuangTKA", PromotionPlatform.YouTube, 85000, 3, 45),
+            new("LolosPTNBersama", PromotionPlatform.YouTube, 145000, 4, 68),
+            new("danauicturah", PromotionPlatform.YouTube, 45000, 2, 29),
+            new("araakbarrumahlolosPTN", PromotionPlatform.YouTube, 190000, 4, 82),
+            new("BCC (Babulu Course Center)", PromotionPlatform.YouTube, 275000, 5, 105),
+            new("PT Besok Jadi", PromotionPlatform.YouTube, 110000, 3, 55),
+            new("Gudang Wangsit", PromotionPlatform.YouTube, 75000, 3, 41),
 
-            new("KreasiNala", PromotionPlatform.Instagram, 30000, 2, 27),
-            new("VisualKita", PromotionPlatform.Instagram, 65000, 3, 45),
-            new("UMKM Naik", PromotionPlatform.Instagram, 125000, 4, 72),
-            new("Ruang Desain ID", PromotionPlatform.Instagram, 280000, 5, 125),
-            new("Belajar Bareng", PromotionPlatform.Instagram, 85000, 3, 55),
-            new("Daily Template", PromotionPlatform.Instagram, 190000, 4, 95)
+            new("wifi tetangga", PromotionPlatform.Instagram, 25000, 2, 20),
+            new("daruhfalahACservis", PromotionPlatform.Instagram, 40000, 2, 27),
+            new("Babulugroup", PromotionPlatform.Instagram, 70000, 3, 39),
+            new("adminbelummandi", PromotionPlatform.Instagram, 30000, 2, 23),
+            new("KoneksiAsrama11Malam", PromotionPlatform.Instagram, 95000, 3, 48),
+            new("CV Nanti Aja", PromotionPlatform.Instagram, 125000, 4, 62),
+            new("Divisi Overthinking", PromotionPlatform.Instagram, 80000, 3, 44),
+            new("NasigorengDept", PromotionPlatform.Instagram, 55000, 2, 34),
+            new("Pantry Pusat", PromotionPlatform.Instagram, 65000, 3, 37),
+            new("Rapat Gajelas", PromotionPlatform.Instagram, 45000, 2, 30),
+            new("LapanganRKB", PromotionPlatform.Instagram, 60000, 3, 36),
+            new("RUMDIN_GTK", PromotionPlatform.Instagram, 90000, 3, 49),
+            new("Kemenag_id", PromotionPlatform.Instagram, 230000, 5, 96),
+
+            new("Gabut Corporation", PromotionPlatform.TikTok, 70000, 2, 46),
+            new("Kantor Mikir", PromotionPlatform.TikTok, 105000, 3, 59),
+            new("Lab Ngasal", PromotionPlatform.TikTok, 55000, 2, 38),
+            new("icsmadubersatu", PromotionPlatform.TikTok, 135000, 3, 72),
+            new("Wifi-Gratis@PaserTuntas", PromotionPlatform.TikTok, 180000, 4, 88)
         };
 
         public static IReadOnlyList<PromoterOffer> Generate(int day)

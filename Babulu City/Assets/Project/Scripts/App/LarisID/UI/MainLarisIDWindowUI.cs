@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using IntegratedApps;
+using ProdukLM;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -50,6 +51,10 @@ namespace LarisID
             public TMP_Text platformText;
             public TMP_Text detailsText;
             public Button selectButton;
+            public Image selectionGraphic;
+            public Color defaultSelectionColor;
+            public Image platformIcon;
+            public Sprite defaultPlatformIcon;
         }
 
         sealed class HistoryRow
@@ -69,6 +74,14 @@ namespace LarisID
         public GameObject windowRoot;
         public GameObject produkLMWindow;
         public Transform desktopTaskbar;
+
+        [Header("Ikon Platform Promosi")]
+        [Tooltip("Isi sprite logo YouTube. Dapat diganti langsung dari Inspector.")]
+        public Sprite youtubePromotionIcon;
+        [Tooltip("Isi sprite logo Instagram. Dapat diganti langsung dari Inspector.")]
+        public Sprite instagramPromotionIcon;
+        [Tooltip("Isi sprite logo TikTok. Dapat diganti langsung dari Inspector.")]
+        public Sprite tiktokPromotionIcon;
 
         GameObject dashboardPage;
         GameObject productsPage;
@@ -97,12 +110,37 @@ namespace LarisID
 
         TMP_Text promotionProductName;
         TMP_Text promotionProductPrice;
+        Image promotionProductIcon;
         TMP_Text promotionCountText;
         RectTransform promotionContent;
-        TMP_Text promotionConfirmationTitle;
+
+        [Header("Tab Promosi (Hubungkan Manual bila perlu)")]
+        [Tooltip("Teks nilai saldo pada tab Promosi, misalnya GameObject 'Nilai Saldo'.")]
+        [SerializeField] TMP_Text promotionBalanceText;
+        [Tooltip("Container/tulisan Sisa Promosi yang akan dimatikan bila produk tidak sedang dipromosikan.")]
+        [SerializeField] GameObject promotionRemainingRoot;
+        [Tooltip("Teks yang menampilkan jumlah hari promosi tersisa.")]
+        [SerializeField] TMP_Text promotionRemainingDaysText;
+        [Tooltip("Warna kartu promotor ketika sedang dipilih.")]
+        [SerializeField] Color promotionSelectedCardColor = new Color(.20f, .58f, 1f, .42f);
+
+        [Header("Ringkasan Promosi (Hubungkan Manual)")]
+        [Tooltip("Drag TMP Text 'Nama Tempat Promosi' ke slot ini.")]
+        [SerializeField]
+        TMP_Text promotionConfirmationPromoterName;
+        [Tooltip("Drag TMP Text 'keterangan' (platform dan durasi) ke slot ini.")]
+        [SerializeField]
+        TMP_Text promotionConfirmationPlatformDays;
+        [Tooltip("Drag Image 'IconPenayanganKelas' ke slot ini.")]
+        [SerializeField]
+        Image promotionConfirmationPlatformIcon;
+        [Tooltip("Drag TMP Text 'NilaiBiaya' ke slot ini.")]
+        [SerializeField]
         TMP_Text promotionConfirmationCost;
-        TMP_Text promotionConfirmationDays;
+        [Tooltip("Drag TMP Text nilai estimasi kenaikan tayangan ke slot ini.")]
+        [SerializeField]
         TMP_Text promotionConfirmationBoost;
+
         Button previousPromotionProductButton;
         Button nextPromotionProductButton;
         Button runPromotionButton;
@@ -110,6 +148,8 @@ namespace LarisID
         IReadOnlyList<PromoterOffer> currentOffers = Array.Empty<PromoterOffer>();
         PromoterOffer selectedOffer;
         int promotionProductIndex;
+        bool promotionRemainingTextIncludesLabel;
+        string promotionRemainingLabel = "Sisa Hari Promosi";
 
         TMP_Text historyTitle;
         TMP_Text historyProductCount;
@@ -281,6 +321,8 @@ namespace LarisID
             Transform page = dashboardPage.transform;
             Transform nameFrame = FindNamed(page, "NamaToko.Frame");
             shopNameText = FindText(nameFrame, "NamaToko.TEXT");
+            if (shopNameText != null)
+                shopNameText.alignment = TextAlignmentOptions.MidlineLeft;
             Transform descriptionPanel = FindNamed(page, "panel.deskripsi");
             // "Text (TMP)" di frameDeskripsi adalah judul "Deskripsi Toko".
             // Isi yang boleh diedit adalah teks badan bernama "Teks Deskripsi".
@@ -350,6 +392,12 @@ namespace LarisID
             Transform productPanel = FindNamed(page, "Paneldata.frame");
             promotionProductName = FindText(productPanel, "NamaProduk.TXT");
             promotionProductPrice = FindText(productPanel, "HargaProduk.TXT");
+            promotionProductIcon = FindNamed(productPanel, "ikon Produk", "produk.icon")?.GetComponent<Image>();
+            promotionBalanceText ??= FindText(
+                page, "Nilai Saldo", "NilaiSaldo", "SaldoValue", "NilaiSaldo.TXT");
+            promotionBalanceText ??= CardValue(page, "TabSaldo");
+
+            ResolvePromotionRemainingUI(productPanel);
 
             previousPromotionProductButton = BindClick(
                 FindNamed(productPanel, "PreviousProductButton", "minus.Frame"),
@@ -372,13 +420,72 @@ namespace LarisID
             }
 
             Transform confirmation = FindNamed(page, "PanelPromosikan");
-            promotionConfirmationTitle = FindText(FindNamed(confirmation, "FrameAtas"), "Text (TMP)");
-            promotionConfirmationCost = FindText(FindNamed(confirmation, "IconDuit"), "NilaiBiaya", "data.TXT (1)");
-            promotionConfirmationDays = FindText(FindNamed(confirmation, "IconPenayanganKelas"), "data.TXT");
-            promotionConfirmationBoost = FindText(FindNamed(confirmation, "iconEstimasiTayangan"), "Nilai Estimasi", "data.TXT (2)");
+            Transform confirmationPromoter = FindNamed(confirmation, "IconPenayanganKelas");
+            promotionConfirmationPromoterName ??= FindText(
+                confirmationPromoter, "Nama Tempat Promosi", "data.TXT");
+            promotionConfirmationPlatformDays ??= FindText(
+                confirmationPromoter, "keterangan", "Ket.TXT");
+            promotionConfirmationPlatformIcon ??= confirmationPromoter?.GetComponent<Image>();
+            promotionConfirmationCost ??= FindText(
+                FindNamed(confirmation, "IconDuit"), "NilaiBiaya", "data.TXT (1)");
+            promotionConfirmationBoost ??= FindText(
+                FindNamed(confirmation, "iconEstimasiTayangan"), "Nilai Estimasi", "data.TXT (2)");
             runPromotionButton = BindClick(
                 FindNamed(confirmation, "JalankanPromosiButton", "frame.Jalankan"),
                 RunSelectedPromotion);
+            MakeButtonResponsive(runPromotionButton, true);
+            if (runPromotionButton != null)
+                runPromotionButton.transform.SetAsLastSibling();
+        }
+
+        void ResolvePromotionRemainingUI(Transform productPanel)
+        {
+            Transform automaticRoot = FindNamed(
+                productPanel,
+                "Sisa Promosi",
+                "Sisa Hari Promosi",
+                "SisaPromosi",
+                "Sisa Promosi.Frame",
+                "SisaPromosi.Frame",
+                "SisaHariPromosi");
+
+            promotionRemainingDaysText ??= FindText(
+                automaticRoot,
+                "Nilai Sisa Promosi",
+                "NilaiSisaPromosi",
+                "SisaPromosi.TXT",
+                "Sisa Promosi.TXT",
+                "SisaHariPromosi.TXT");
+
+            if (promotionRemainingDaysText == null && productPanel != null)
+            {
+                TMP_Text[] candidates = productPanel.GetComponentsInChildren<TMP_Text>(true)
+                    .Where(text =>
+                    {
+                        string descriptor = $"{text.name} {text.text}".ToUpperInvariant();
+                        return descriptor.Contains("SISA") && descriptor.Contains("PROMOSI");
+                    })
+                    .ToArray();
+                promotionRemainingDaysText = candidates.FirstOrDefault(text =>
+                {
+                    string name = text.name.ToUpperInvariant();
+                    return name.Contains("NILAI") || name.Contains("HARI");
+                }) ?? candidates.FirstOrDefault();
+            }
+
+            promotionRemainingRoot ??= automaticRoot != null
+                ? automaticRoot.gameObject
+                : promotionRemainingDaysText?.gameObject;
+            promotionRemainingTextIncludesLabel = promotionRemainingDaysText != null &&
+                promotionRemainingDaysText.text.Contains("promosi", StringComparison.OrdinalIgnoreCase);
+            if (promotionRemainingTextIncludesLabel)
+            {
+                string original = promotionRemainingDaysText.text.Trim();
+                int colonIndex = original.IndexOf(':');
+                promotionRemainingLabel = (colonIndex >= 0
+                    ? original.Substring(0, colonIndex)
+                    : original).Trim();
+            }
         }
 
         void BindHistory()
@@ -539,18 +646,27 @@ namespace LarisID
         void BindProductRow(ProductRow row, LarisProduct product)
         {
             SetText(row.nameText, product.productName);
+            if (row.nameText != null)
+                row.nameText.alignment = TextAlignmentOptions.MidlineLeft;
             SetText(row.categoryText, CategoryName(product.category));
             SetText(row.priceText, Rupiah(product.price));
             SetText(row.salesText, product.sales.ToString());
             SetInput(row.nameInput, product.productName);
             SetInput(row.priceInput, product.price.ToString(CultureInfo.InvariantCulture));
+            if (row.nameInput != null)
+            {
+                row.nameInput.characterLimit = 18;
+                if (row.nameInput.textComponent != null)
+                    row.nameInput.textComponent.alignment = TextAlignmentOptions.MidlineLeft;
+            }
 
             bool active = product.status == ProductStatus.Active;
             if (row.activeBadge != null) row.activeBadge.SetActive(active);
             if (row.inactiveBadge != null) row.inactiveBadge.SetActive(!active);
 
             row.editButton?.onClick.RemoveAllListeners();
-            row.editButton?.onClick.AddListener(() => ActivateInput(row.nameInput));
+            if (row.editButton != null)
+                row.editButton.interactable = false;
             row.deleteButton?.onClick.RemoveAllListeners();
             row.deleteButton?.onClick.AddListener(() => manager.DeleteProduct(product));
             row.activeButton?.onClick.RemoveAllListeners();
@@ -558,11 +674,6 @@ namespace LarisID
             row.inactiveButton?.onClick.RemoveAllListeners();
             row.inactiveButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
 
-            if (row.nameInput != null)
-            {
-                row.nameInput.onEndEdit.RemoveAllListeners();
-                row.nameInput.onEndEdit.AddListener(value => manager.SetProductName(product, value));
-            }
             if (row.priceInput != null)
             {
                 row.priceInput.onEndEdit.RemoveAllListeners();
@@ -580,6 +691,7 @@ namespace LarisID
         void RefreshPromotion()
         {
             LarisMarketplaceService shop = manager.Marketplace;
+            SetText(promotionBalanceText, Rupiah(shop.Balance));
             List<LarisProduct> eligible = EligiblePromotionProducts();
             if (eligible.Count == 0)
                 promotionProductIndex = 0;
@@ -587,8 +699,17 @@ namespace LarisID
                 promotionProductIndex = Mathf.Clamp(promotionProductIndex, 0, eligible.Count - 1);
 
             LarisProduct product = eligible.Count > 0 ? eligible[promotionProductIndex] : null;
-            SetText(promotionProductName, product != null ? product.productName : "Belum ada produk terjual");
+            RefreshPromotionRemaining(product);
+            SetText(promotionProductName, product != null ? product.productName : "Belum ada produk aktif");
             SetText(promotionProductPrice, product != null ? Rupiah(product.price) : "Harga Rp -");
+            if (promotionProductIcon != null)
+            {
+                promotionProductIcon.sprite = ResolveProductIcon(product);
+                promotionProductIcon.preserveAspect = true;
+                promotionProductIcon.color = Color.white;
+                promotionProductIcon.gameObject.SetActive(
+                    product != null && promotionProductIcon.sprite != null);
+            }
             SetText(promotionCountText, $"'{eligible.Count} PRODUK");
             if (previousPromotionProductButton != null)
                 previousPromotionProductButton.interactable = eligible.Count > 1;
@@ -610,35 +731,122 @@ namespace LarisID
                 PromoterOffer offer = currentOffers[i];
                 SetText(row.promoterText, offer.promoterName);
                 SetText(row.platformText, offer.platform.ToString().ToUpperInvariant());
+                SetPromotionRowSelected(row, selectedOffer != null && selectedOffer.id == offer.id);
+                if (row.platformIcon != null)
+                {
+                    row.platformIcon.sprite = ResolvePromotionPlatformIcon(
+                        offer.platform, row.defaultPlatformIcon);
+                    row.platformIcon.preserveAspect = true;
+                    row.platformIcon.color = Color.white;
+                    row.platformIcon.gameObject.SetActive(row.platformIcon.sprite != null);
+                }
                 SetText(row.detailsText,
                     $"{Rupiah(offer.cost)} • {offer.durationDays} Hari • Estimasi Tayangan +{offer.viewBoostPercent}%");
+                PromoterOffer clickedOffer = offer;
                 row.selectButton.onClick.RemoveAllListeners();
                 row.selectButton.onClick.AddListener(() =>
                 {
-                    selectedOffer = offer;
-                    RefreshPromotionConfirmation(product);
+                    // Cari kembali berdasarkan ID agar ringkasan tidak memakai
+                    // referensi baris/closure yang sudah berubah setelah refresh.
+                    selectedOffer = currentOffers.FirstOrDefault(item => item.id == clickedOffer.id)
+                                    ?? clickedOffer;
+                    RefreshPromotionSelectionVisuals();
+                    RefreshPromotionConfirmation(CurrentPromotionProduct());
                 });
             }
             Rebuild(promotionContent);
             RefreshPromotionConfirmation(product);
         }
 
+        void RefreshPromotionRemaining(LarisProduct product)
+        {
+            bool promoted = product != null && product.IsPromoted;
+            if (promoted && promotionRemainingDaysText != null)
+            {
+                SetText(
+                    promotionRemainingDaysText,
+                    promotionRemainingTextIncludesLabel
+                        ? $"{promotionRemainingLabel} : {product.promotionDaysRemaining} Hari"
+                        : $"{product.promotionDaysRemaining} Hari");
+            }
+
+            if (promotionRemainingRoot != null)
+                promotionRemainingRoot.SetActive(promoted);
+            else if (promotionRemainingDaysText != null)
+                promotionRemainingDaysText.gameObject.SetActive(promoted);
+        }
+
         void RefreshPromotionConfirmation(LarisProduct product)
         {
-            SetText(promotionConfirmationTitle,
-                selectedOffer != null ? selectedOffer.promoterName : "Ringkasan Promosi");
+            SetText(promotionConfirmationPromoterName,
+                selectedOffer != null ? selectedOffer.promoterName : string.Empty);
+            SetText(promotionConfirmationPlatformDays,
+                selectedOffer != null
+                    ? $"{PromotionPlatformLabel(selectedOffer.platform)} • {selectedOffer.durationDays} Hari"
+                    : string.Empty);
+            if (promotionConfirmationPlatformIcon != null)
+            {
+                promotionConfirmationPlatformIcon.sprite = selectedOffer != null
+                    ? ResolvePromotionPlatformIcon(selectedOffer.platform, null)
+                    : null;
+                promotionConfirmationPlatformIcon.preserveAspect = true;
+                promotionConfirmationPlatformIcon.color = Color.white;
+                promotionConfirmationPlatformIcon.enabled =
+                    promotionConfirmationPlatformIcon.sprite != null;
+            }
             SetText(promotionConfirmationCost,
-                selectedOffer != null ? Rupiah(selectedOffer.cost) : "Rp 0");
-            SetText(promotionConfirmationDays,
-                selectedOffer != null ? $"{selectedOffer.durationDays} Hari" : "0 Hari");
+                selectedOffer != null ? Rupiah(selectedOffer.cost) : string.Empty);
             SetText(promotionConfirmationBoost,
-                selectedOffer != null ? $"+{selectedOffer.viewBoostPercent}%" : "+0%");
+                selectedOffer != null ? $"+{selectedOffer.viewBoostPercent}%" : string.Empty);
             if (runPromotionButton != null)
             {
                 runPromotionButton.interactable =
                     product != null && selectedOffer != null &&
                     !product.IsPromoted && manager.Marketplace.Balance >= selectedOffer.cost;
             }
+        }
+
+        void RefreshPromotionSelectionVisuals()
+        {
+            for (int i = 0; i < promotionRows.Count; i++)
+            {
+                PromotionRow row = promotionRows[i];
+                bool selected = row.root.activeSelf && i < currentOffers.Count &&
+                                selectedOffer != null && currentOffers[i].id == selectedOffer.id;
+                SetPromotionRowSelected(row, selected);
+            }
+        }
+
+        void SetPromotionRowSelected(PromotionRow row, bool selected)
+        {
+            if (row?.selectionGraphic == null)
+                return;
+
+            row.selectionGraphic.color = selected
+                ? promotionSelectedCardColor
+                : row.defaultSelectionColor;
+        }
+
+        Sprite ResolvePromotionPlatformIcon(PromotionPlatform platform, Sprite fallback)
+        {
+            return platform switch
+            {
+                PromotionPlatform.Instagram => instagramPromotionIcon != null
+                    ? instagramPromotionIcon : null,
+                PromotionPlatform.TikTok => tiktokPromotionIcon != null
+                    ? tiktokPromotionIcon : null,
+                _ => youtubePromotionIcon != null ? youtubePromotionIcon : fallback
+            };
+        }
+
+        static string PromotionPlatformLabel(PromotionPlatform platform)
+        {
+            return platform switch
+            {
+                PromotionPlatform.Instagram => "Instagram",
+                PromotionPlatform.TikTok => "TikTok",
+                _ => "YouTube"
+            };
         }
 
         void RunSelectedPromotion()
@@ -784,8 +992,9 @@ namespace LarisID
                 inactiveButton = BindClick(inactive, null),
                 editButton = BindClick(FindNamed(row, "Edit button", "edit.frame"), null),
                 deleteButton = BindClick(FindNamed(row, "delete.frame (1)"), null),
-                nameInput = BuildInput(name?.transform.parent, name,
-                    TMP_InputField.ContentType.Standard, TMP_InputField.LineType.SingleLine),
+                // Nama produk berasal dari ProdukLM dan tidak dapat diubah lagi
+                // dari Laris.ID.
+                nameInput = null,
                 priceInput = BuildInput(price?.transform, price,
                     TMP_InputField.ContentType.IntegerNumber, TMP_InputField.LineType.SingleLine)
             };
@@ -793,13 +1002,21 @@ namespace LarisID
 
         PromotionRow CreatePromotionRow(GameObject root)
         {
+            Image platformIcon = FindNamed(root.transform, "icon")?.GetComponent<Image>();
+            Image selectionGraphic = root.GetComponent<Image>();
+            Button cardButton = BindClick(root.transform, null);
+            MakeButtonResponsive(cardButton, true);
             return new PromotionRow
             {
                 root = root,
                 promoterText = FindText(root.transform, "NamaPromosi", "NamaPromotor"),
                 platformText = FindText(root.transform, "NamaPlatformPromosi"),
                 detailsText = FindText(root.transform, "Ket.Harga,Hari,EstimasiTayangan", "keterangan"),
-                selectButton = BindClick(FindNamed(root.transform, "SelectProduct", "framePilih"), null)
+                selectButton = cardButton,
+                selectionGraphic = selectionGraphic,
+                defaultSelectionColor = selectionGraphic != null ? selectionGraphic.color : Color.white,
+                platformIcon = platformIcon,
+                defaultPlatformIcon = platformIcon != null ? platformIcon.sprite : null
             };
         }
 
@@ -850,7 +1067,7 @@ namespace LarisID
         List<LarisProduct> EligiblePromotionProducts()
         {
             return manager.Marketplace.Products
-                .Where(item => item.status == ProductStatus.Active && item.sales > 0)
+                .Where(item => item.status == ProductStatus.Active)
                 .ToList();
         }
 
@@ -898,6 +1115,8 @@ namespace LarisID
             if (input == null) input = host.gameObject.AddComponent<TMP_InputField>();
             input.textViewport = text.rectTransform;
             input.textComponent = text;
+            text.raycastTarget = true;
+            input.targetGraphic = host.GetComponent<Graphic>() ?? text;
             input.contentType = contentType;
             input.lineType = lineType;
             input.richText = false;
@@ -905,6 +1124,19 @@ namespace LarisID
             input.caretColor = Color.white;
             input.selectionColor = new Color(.25f, .65f, 1f, .45f);
             return input;
+        }
+
+        static Sprite ResolveProductIcon(LarisProduct product)
+        {
+            if (product == null || string.IsNullOrWhiteSpace(product.iconKey))
+                return null;
+
+            MainProdukLMWindowUI produkWindow = UnityEngine.Object.FindAnyObjectByType<MainProdukLMWindowUI>(
+                FindObjectsInactive.Include);
+            MainProdukLMWindowUI.ProductOption option = produkWindow?.productOptions?
+                .FirstOrDefault(item => item?.card != null &&
+                    item.card.cardId.Equals(product.iconKey, StringComparison.OrdinalIgnoreCase));
+            return option?.previewIcon ?? option?.card?.icon;
         }
 
         static void ActivateInput(TMP_InputField input)
@@ -943,6 +1175,28 @@ namespace LarisID
             if (action != null)
                 button.onClick.AddListener(() => action());
             return button;
+        }
+
+        static void MakeButtonResponsive(Button button, bool disableChildRaycasts)
+        {
+            if (button == null)
+                return;
+
+            Graphic rootGraphic = button.GetComponent<Graphic>();
+            button.targetGraphic = rootGraphic;
+            button.transition = Selectable.Transition.None;
+            button.interactable = true;
+            if (rootGraphic != null)
+                rootGraphic.raycastTarget = true;
+
+            if (!disableChildRaycasts)
+                return;
+
+            foreach (Graphic graphic in button.GetComponentsInChildren<Graphic>(true))
+            {
+                if (graphic != rootGraphic)
+                    graphic.raycastTarget = false;
+            }
         }
 
         static TMP_Text CardValue(Transform page, string cardName)

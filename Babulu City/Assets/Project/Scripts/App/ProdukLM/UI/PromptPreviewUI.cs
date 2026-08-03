@@ -7,31 +7,44 @@ namespace ProdukLM
     public class PromptPreviewUI : MonoBehaviour
     {
         public TMP_Text promptText;
+        ProjectFlowManager flow;
 
         void OnEnable()
         {
-            if (ProjectFlowManager.Instance == null)
-            {
-                Debug.LogError(
-                    $"{nameof(PromptPreviewUI)} pada '{name}' tidak menemukan {nameof(ProjectFlowManager)}.",
-                    this);
-                return;
-            }
-
-            ProjectFlowManager.Instance.OnSlotChanged += Refresh;
-            Refresh();
+            ProjectFlowManager.OnInstanceReady += Bind;
+            Bind(ProjectFlowManager.Instance);
         }
 
         void OnDisable()
         {
-            if (ProjectFlowManager.Instance != null)
-                ProjectFlowManager.Instance.OnSlotChanged -= Refresh;
+            ProjectFlowManager.OnInstanceReady -= Bind;
+            Unbind();
+        }
+
+        void Bind(ProjectFlowManager manager)
+        {
+            if (manager == null || flow == manager)
+                return;
+
+            Unbind();
+            flow = manager;
+            flow.OnSlotChanged += Refresh;
+            Refresh();
+        }
+
+        void Unbind()
+        {
+            if (flow == null)
+                return;
+
+            flow.OnSlotChanged -= Refresh;
+            flow = null;
         }
 
         void Refresh()
         {
-            if (promptText != null && ProjectFlowManager.Instance != null)
-                promptText.text = PromptBuilder.Build(ProjectFlowManager.Instance.State);
+            if (promptText != null && flow != null)
+                promptText.text = PromptBuilder.Build(flow.State);
         }
     }
 }

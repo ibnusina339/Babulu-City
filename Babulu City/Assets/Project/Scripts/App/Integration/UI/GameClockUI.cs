@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using ProdukLM;
 using TMPro;
 using UnityEngine;
 
@@ -27,9 +28,12 @@ namespace IntegratedApps
         float elapsedRealSeconds;
         DateTime parsedStartDate;
         bool reachedEnd;
+        int gameDayOffset;
 
         public bool ReachedEnd => reachedEnd;
+        public int CurrentDayNumber => gameDayOffset + 1;
         public event Action DayEnded;
+        public event Action<int> NewDayStarted;
 
         public int CurrentGameMinutes
         {
@@ -62,6 +66,7 @@ namespace IntegratedApps
         {
             elapsedRealSeconds = 0f;
             reachedEnd = false;
+            gameDayOffset = 0;
 
             if (!DateTime.TryParseExact(
                     startDate,
@@ -74,6 +79,19 @@ namespace IntegratedApps
             }
 
             RefreshDisplay();
+        }
+
+        public void BeginNextDay()
+        {
+            gameDayOffset++;
+            elapsedRealSeconds = 0f;
+            reachedEnd = false;
+            // Limit ProdukLM mengikuti hari permainan, bukan tanggal komputer.
+            // Dipanggil langsung dari clock supaya tetap reset walaupun window
+            // ProdukLM atau ProjectFlowManager sedang nonaktif.
+            DailyGenerationCounter.ResetForTesting();
+            RefreshDisplay();
+            NewDayStarted?.Invoke(gameDayOffset + 1);
         }
 
         /// <summary>
@@ -108,7 +126,7 @@ namespace IntegratedApps
 
             string clockValue = $"{displayHour:00}.{displayMinute:00}";
             string dateValue = parsedStartDate
-                .AddDays(crossedMidnight ? 1 : 0)
+                .AddDays(gameDayOffset + (crossedMidnight ? 1 : 0))
                 .ToString("dd/MM/yyyy", CultureInfo.InvariantCulture);
 
             SetTexts(clockTexts, clockValue);
@@ -128,6 +146,49 @@ namespace IntegratedApps
                 if (target != null)
                     target.text = value;
             }
+        }
+    }
+
+    static class GameClockBootstrap
+    {
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void RestoreClockIfMissing()
+        {
+            GameClockUI existing = UnityEngine.Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
+            if (existing != null)
+                return;
+
+            TMP_Text clockText = FindText("Jam", "jam");
+            TMP_Text dateText = FindText("Tanggal", "tanggal");
+            if (clockText == null && dateText == null)
+                return;
+
+            Transform uiRoot = clockText != null ? clockText.transform.root : dateText.transform.root;
+            GameClockUI clock = uiRoot.gameObject.AddComponent<GameClockUI>();
+            clock.clockTexts = clockText != null ? new[] { clockText } : null;
+            clock.dateTexts = dateText != null ? new[] { dateText } : null;
+            clock.startHour = 20;
+            clock.endHour = 24;
+            clock.realSecondsPerGameMinute = 2f;
+            clock.startDate = "30/07/2026";
+            clock.runAutomatically = true;
+            clock.useUnscaledTime = true;
+            clock.ResetClock();
+        }
+
+        static TMP_Text FindText(params string[] acceptedNames)
+        {
+            foreach (TMP_Text text in UnityEngine.Object.FindObjectsByType<TMP_Text>(
+                         FindObjectsInactive.Include))
+            {
+                foreach (string acceptedName in acceptedNames)
+                {
+                    if (text.name.Equals(acceptedName, StringComparison.OrdinalIgnoreCase))
+                        return text;
+                }
+            }
+
+            return null;
         }
     }
 }

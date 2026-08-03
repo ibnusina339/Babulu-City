@@ -252,7 +252,7 @@ namespace IntegratedApps
         static void Install()
         {
             foreach (Transform candidate in Object.FindObjectsByType<Transform>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
             {
                 if (candidate.name != "VentraMeet" || candidate.GetComponent<VentraMeetUI>() != null)
                     continue;

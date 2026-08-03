@@ -12,6 +12,7 @@ GameObject:
   - component: {fileID: 8256773534156397868}
   - component: {fileID: 6973864986747003604}
   - component: {fileID: 8991784693709988230}
+  - component: {fileID: 3316710048912376402}
   m_Layer: 0
   m_Name: PlayerTest
   m_TagString: Untagged
@@ -83,8 +84,8 @@ SpriteRenderer:
   m_SortingLayer: 7
   m_SortingOrder: 1
   m_MaskInteraction: 0
-  m_Sprite: {fileID: -9095717837082945937, guid: 207ee8102dd4143d288186ef0be518ee, type: 3}
-  m_Color: {r: 0.8627452, g: 0.07843138, b: 0.2352941, a: 1}
+  m_Sprite: {fileID: 7460018838029601508, guid: a965cae648c04ca49886d0406395a295, type: 3}
+  m_Color: {r: 1, g: 1, b: 1, a: 1}
   m_FlipX: 0
   m_FlipY: 0
   m_DrawMode: 0
@@ -133,3 +134,42 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: '::'
   moveSpeed: 5
+  spriteRenderer: {fileID: 8256773534156397868}
+  animationFramesPerSecond: 6
+  idleDown: {fileID: 7460018838029601508, guid: a965cae648c04ca49886d0406395a295, type: 3}
+  idleLeft: {fileID: -7619284465088079133, guid: a965cae648c04ca49886d0406395a295, type: 3}
+  idleUp: {fileID: 1308914427029022035, guid: a965cae648c04ca49886d0406395a295, type: 3}
+  idleRight: {fileID: -6303225630928791191, guid: a965cae648c04ca49886d0406395a295, type: 3}
+  walkDown:
+  - {fileID: 2297393612224843758, guid: fb9d6b0ba17e8904e83ebb6e265703a4, type: 3}
+  - {fileID: -6741428432309283903, guid: fb9d6b0ba17e8904e83ebb6e265703a4, type: 3}
+  walkLeft:
+  - {fileID: 2790103489947333269, guid: 8b3b6e7ef7d5ce7488940db1db007f5d, type: 3}
+  - {fileID: 8055971944035095167, guid: 8b3b6e7ef7d5ce7488940db1db007f5d, type: 3}
+  walkUp:
+  - {fileID: 4751931973088108127, guid: debcf1c309b248c47b3491df85adc32e, type: 3}
+  - {fileID: 6687816025423853597, guid: debcf1c309b248c47b3491df85adc32e, type: 3}
+  walkRight:
+  - {fileID: 1193010099722024232, guid: 7f46f48b8db537b4e8f41cc0b1f6c2dc, type: 3}
+  - {fileID: -1406981771558617371, guid: 7f46f48b8db537b4e8f41cc0b1f6c2dc, type: 3}
+--- !u!114 &3316710048912376402
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 944485319968787562}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3ac1630111044a6a93fa62fa8f3c28bd, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::PlayerDepthSorting
+  playerRenderer: {fileID: 8256773534156397868}
+  sharedSortingLayer: player
+  orderScale: 100
+  playerOrderOffset: 1
+  horizontalDepthWeight: 0.5
+  roomRootName: IsiKamar
+  occluderNames:
+  - kasur
+  - kursi

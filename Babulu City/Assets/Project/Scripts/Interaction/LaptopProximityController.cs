@@ -1,5 +1,7 @@
 using System.Collections;
+using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
@@ -9,20 +11,31 @@ public sealed class LaptopProximityController : MonoBehaviour
     [SerializeField] private GameObject desktopRoot;
 
     [Header("Interaksi")]
-    [SerializeField, Min(0.1f)] private float interactionRadius = 2.25f;
+    [Tooltip("PolygonCollider2D Interact Box yang berada di bawah hierarchy Laptop.")]
+    [SerializeField] private Collider2D interactionArea;
 
     [Header("Transisi")]
     [SerializeField, Min(0f)] private float fadeDuration = 0.35f;
     [SerializeField] private Color fadeColor = Color.black;
+
+    [Header("Penutup Layar Desktop")]
+    [SerializeField] private Color desktopBackdropColor = new Color(0.015f, 0.025f, 0.045f, 1f);
 
     private PlayerMovement playerMovement;
     private CanvasGroup fadeGroup;
     private bool laptopOpened;
     private bool transitioning;
 
+    public bool IsLaptopOpened => laptopOpened;
+
     void Start()
     {
         playerMovement = FindAnyObjectByType<PlayerMovement>();
+        Collider2D hierarchyArea = FindInteractionArea();
+        if (hierarchyArea != null)
+            interactionArea = hierarchyArea;
+
+        EnsureDesktopBackdrop();
         CreateFadeOverlay();
 
         if (desktopRoot != null)
@@ -32,6 +45,11 @@ public sealed class LaptopProximityController : MonoBehaviour
     void Update()
     {
         if (transitioning || Keyboard.current == null)
+            return;
+
+        // Ketikan, termasuk huruf E, harus diterima input field dan tidak
+        // dianggap sebagai perintah untuk keluar dari desktop.
+        if (IsEditingText())
             return;
 
         bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame;
@@ -49,6 +67,17 @@ public sealed class LaptopProximityController : MonoBehaviour
             StartCoroutine(SetLaptopOpen(true));
     }
 
+    static bool IsEditingText()
+    {
+        GameObject selected = EventSystem.current?.currentSelectedGameObject;
+        if (selected == null)
+            return false;
+
+        TMP_InputField input = selected.GetComponent<TMP_InputField>() ??
+                               selected.GetComponentInParent<TMP_InputField>();
+        return input != null && input.isFocused;
+    }
+
     bool IsPlayerInRange()
     {
         if (playerMovement == null)
@@ -57,8 +86,62 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (playerMovement == null)
             return false;
 
-        return Vector2.Distance(playerMovement.transform.position, transform.position)
-            <= interactionRadius;
+        if (interactionArea == null)
+            interactionArea = FindInteractionArea();
+
+        if (interactionArea == null)
+            return false;
+
+        return interactionArea.OverlapPoint(playerMovement.transform.position);
+    }
+
+    Collider2D FindInteractionArea()
+    {
+        PolygonCollider2D fallback = null;
+        foreach (PolygonCollider2D polygon in GetComponentsInChildren<PolygonCollider2D>(true))
+        {
+            fallback ??= polygon;
+            if (polygon.name.Contains("interact", System.StringComparison.OrdinalIgnoreCase)
+                || polygon.name.Contains("interac", System.StringComparison.OrdinalIgnoreCase))
+                return polygon;
+        }
+
+        return fallback;
+    }
+
+    void EnsureDesktopBackdrop()
+    {
+        if (desktopRoot == null)
+            return;
+
+        Transform existing = desktopRoot.transform.Find("Desktop Fullscreen Backdrop");
+        if (existing != null)
+        {
+            existing.SetAsFirstSibling();
+            return;
+        }
+
+        GameObject backdrop = new GameObject(
+            "Desktop Fullscreen Backdrop",
+            typeof(RectTransform),
+            typeof(CanvasRenderer),
+            typeof(Image));
+        backdrop.layer = desktopRoot.layer;
+        backdrop.transform.SetParent(desktopRoot.transform, false);
+        backdrop.transform.SetAsFirstSibling();
+
+        RectTransform rect = (RectTransform)backdrop.transform;
+        rect.anchorMin = Vector2.zero;
+        rect.anchorMax = Vector2.one;
+        rect.pivot = new Vector2(0.5f, 0.5f);
+        rect.anchoredPosition = Vector2.zero;
+        rect.sizeDelta = Vector2.zero;
+        rect.offsetMin = new Vector2(-8f, -8f);
+        rect.offsetMax = new Vector2(8f, 8f);
+
+        Image image = backdrop.GetComponent<Image>();
+        image.color = desktopBackdropColor;
+        image.raycastTarget = false;
     }
 
     IEnumerator SetLaptopOpen(bool open)
@@ -138,6 +221,10 @@ public sealed class LaptopProximityController : MonoBehaviour
     void OnDrawGizmosSelected()
     {
         Gizmos.color = new Color(0.2f, 0.9f, 1f, 0.8f);
-        Gizmos.DrawWireSphere(transform.position, interactionRadius);
+        if (interactionArea != null)
+        {
+            Bounds bounds = interactionArea.bounds;
+            Gizmos.DrawWireCube(bounds.center, bounds.size);
+        }
     }
 }

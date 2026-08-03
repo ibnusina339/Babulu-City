@@ -17,9 +17,11 @@ namespace IntegratedApps.Editor
 {
     public static class MainProdukLMSceneIntegrator
     {
-        const int CurrentIntegrationVersion = 10;
+        const int CurrentIntegrationVersion = 22;
         const string CardPrefabPath = "Assets/Project/Prefabs/UI/CardPrefab.prefab";
+        const string GenerationLoadingPrefabPath = "Assets/Project/Prefabs/UI/SpecialPage-GenerateScene.prefab";
         const string CardDataFolder = "Assets/Project/Resource/CardData";
+        const string PublicPixelFontPath = "Assets/Tilemap/PublicPixel-rv0pA SDF.asset";
 
         [InitializeOnLoadMethod]
         static void FinishInterruptedMainIntegration()
@@ -87,6 +89,7 @@ namespace IntegratedApps.Editor
             flow.resultPanel = page3.gameObject;
 
             SetupBuilder(page2);
+            SetupGenerationLoading(page2);
             SetupDesktopAndProductSelection(uiRoot.transform, window, page1, page2, flow);
             SetupClock(uiRoot.transform);
 
@@ -104,11 +107,58 @@ namespace IntegratedApps.Editor
                 "Desktop icon, tahap 1, drag-and-drop tahap 2, Back, Generate, dan Close sudah terhubung.");
         }
 
+        static void SetupGenerationLoading(Transform page2)
+        {
+            Transform window = page2.parent;
+            Transform loading = window.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name.Equals(
+                    "SpecialPage-GenerateScene", StringComparison.OrdinalIgnoreCase));
+
+            if (loading == null)
+            {
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(GenerationLoadingPrefabPath);
+                if (prefab == null)
+                    throw new InvalidOperationException(
+                        $"Prefab loading tidak ditemukan di '{GenerationLoadingPrefabPath}'.");
+
+                GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, page2);
+                instance.name = "SpecialPage-GenerateScene";
+                loading = instance.transform;
+            }
+
+            // Loading adalah bagian dari Tahap 2. Page2 sengaja tetap aktif
+            // selama coroutine agar overlay ini tidak ikut berhenti.
+            if (loading.parent != page2)
+                loading.SetParent(page2, false);
+
+            RectTransform rect = loading as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+            }
+
+            ProdukLMGenerationLoadingUI controller =
+                GetOrAdd<ProdukLMGenerationLoadingUI>(loading.gameObject);
+            controller.freeDurationSeconds = 15f;
+            controller.plusDurationSeconds = 10f;
+            controller.proDurationSeconds = 6f;
+            controller.consumedGameMinutes = 10f;
+            loading.gameObject.SetActive(false);
+
+            EditorUtility.SetDirty(controller);
+            EditorUtility.SetDirty(loading);
+        }
+
         static void SetupBuilder(Transform page2)
         {
             CardData[] catalog = LoadCardCatalog();
 
             Transform libraryRoot = Require(page2, "TabsOpsi");
+            libraryRoot.gameObject.SetActive(true);
             CardLibraryManager library = GetOrAdd<CardLibraryManager>(libraryRoot.gameObject);
             library.cardContainer = libraryRoot;
             library.cardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CardPrefabPath)
@@ -135,6 +185,9 @@ namespace IntegratedApps.Editor
                 TextAlignmentOptions.MidlineLeft);
             promptText.text = string.Empty;
             promptText.margin = new Vector4(25f, 12f, 25f, 12f);
+            TMP_FontAsset publicPixel = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(PublicPixelFontPath);
+            if (publicPixel != null)
+                promptText.font = publicPixel;
 
             PromptPreviewUI preview = GetOrAdd<PromptPreviewUI>(promptBox.gameObject);
             preview.promptText = promptText;
@@ -146,6 +199,93 @@ namespace IntegratedApps.Editor
             Transform generateButton = RequireAny(page2, "Send Button", "sesudah");
             GetOrAdd<BackButtonUI>(EnsureButton(backButton).gameObject);
             GetOrAdd<GenerateButtonUI>(EnsureButton(generateButton).gameObject);
+            SetupPromptResetButton(page2, generateButton, FindReferenceText(page2));
+            SetupCurrentOptionIndicator(page2);
+        }
+
+        static void SetupSavedProductConfirmation(Transform libraryRoot, TMP_Text referenceText)
+        {
+            TMP_Text message = EnsureText(
+                libraryRoot,
+                "ProdukTersimpanMessage",
+                referenceText,
+                20f,
+                TextAlignmentOptions.Center);
+            message.text = "PRODUK SUDAH TERSIMPAN KE LARIS.ID";
+            message.textWrappingMode = TextWrappingModes.Normal;
+
+            Image buttonImage = EnsureImage(libraryRoot, "KembaliKeTahap1Button");
+            buttonImage.color = new Color(0.12f, 0.29f, 0.52f, 1f);
+            EnsureButton(buttonImage.transform);
+            TMP_Text label = EnsureText(
+                buttonImage.transform,
+                "Text",
+                referenceText,
+                16f,
+                TextAlignmentOptions.Center);
+            label.text = "KEMBALI KE TAHAP 1";
+
+            message.gameObject.SetActive(false);
+            buttonImage.gameObject.SetActive(false);
+            EditorUtility.SetDirty(message);
+            EditorUtility.SetDirty(buttonImage);
+        }
+
+        static void SetupCurrentOptionIndicator(Transform page2)
+        {
+            Transform optionNow = page2.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item =>
+                {
+                    string normalized = item.name.Replace(" ", string.Empty)
+                        .Replace("_", string.Empty).Replace("-", string.Empty);
+                    return normalized.Equals("OptionNow", StringComparison.OrdinalIgnoreCase) ||
+                           normalized.Equals("OpsiSekarang", StringComparison.OrdinalIgnoreCase) ||
+                           normalized.Equals("CurrentOption", StringComparison.OrdinalIgnoreCase);
+                });
+            if (optionNow != null)
+                GetOrAdd<CurrentPromptOptionUI>(optionNow.gameObject);
+        }
+
+        static void SetupPromptResetButton(Transform page2, Transform generateButton, TMP_Text referenceText)
+        {
+            Transform existing = page2.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name == "Reset Prompt Button");
+            GameObject resetObject;
+
+            if (existing != null)
+            {
+                resetObject = existing.gameObject;
+            }
+            else
+            {
+                resetObject = UnityEngine.Object.Instantiate(generateButton.gameObject, generateButton.parent);
+                resetObject.name = "Reset Prompt Button";
+                foreach (MonoBehaviour behaviour in resetObject.GetComponents<MonoBehaviour>())
+                    if (behaviour is GenerateButtonUI)
+                        UnityEngine.Object.DestroyImmediate(behaviour);
+
+                RectTransform rect = resetObject.GetComponent<RectTransform>();
+                RectTransform sendRect = generateButton.GetComponent<RectTransform>();
+                rect.anchoredPosition = sendRect.anchoredPosition + new Vector2(-165f, 0f);
+                rect.sizeDelta = new Vector2(180f, Mathf.Max(64f, sendRect.sizeDelta.y * 0.65f));
+
+                foreach (Transform child in resetObject.GetComponentsInChildren<Transform>(true))
+                    if (child != resetObject.transform)
+                        child.gameObject.SetActive(false);
+
+                TMP_Text label = EnsureText(resetObject.transform, "Reset Label", referenceText, 22f,
+                    TextAlignmentOptions.Center);
+                label.text = "RESET";
+                label.gameObject.SetActive(true);
+                RectTransform labelRect = label.rectTransform;
+                labelRect.anchorMin = Vector2.zero;
+                labelRect.anchorMax = Vector2.one;
+                labelRect.offsetMin = Vector2.zero;
+                labelRect.offsetMax = Vector2.zero;
+            }
+
+            GetOrAdd<ResetPromptButtonUI>(EnsureButton(resetObject.transform).gameObject);
+            EditorUtility.SetDirty(resetObject);
         }
 
         static void SetupDesktopAndProductSelection(
@@ -156,6 +296,11 @@ namespace IntegratedApps.Editor
             ProjectFlowManager flow)
         {
             CardData[] catalog = LoadCardCatalog();
+            Transform limitLabel = page1.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name.Equals("Limit", StringComparison.OrdinalIgnoreCase));
+            if (limitLabel != null && limitLabel.GetComponent<TMP_Text>() != null)
+                GetOrAdd<DailyLimitUI>(limitLabel.gameObject);
+
             var options = new List<MainProdukLMWindowUI.ProductOption>
             {
                 ProductOption(page1, "tab/surat", FindCard(catalog, "Template Dokumen")),
@@ -188,15 +333,25 @@ namespace IntegratedApps.Editor
                 26f,
                 TextAlignmentOptions.Center);
 
-            Transform designedPreview = FindChildByNames(
-                descriptionPanel,
-                "Image",
-                "SelectedProductIcon");
+            Transform designedPreview = descriptionContent.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item =>
+                    item.name.Equals("SelectedProductIcon", StringComparison.OrdinalIgnoreCase) ||
+                    item.name.Equals("Image", StringComparison.OrdinalIgnoreCase));
             Image productIcon = designedPreview != null
                 ? designedPreview.GetComponent<Image>()
                 : null;
             if (productIcon == null)
                 productIcon = EnsureImage(descriptionPanel, "SelectedProductIcon");
+
+            // Matikan fallback lama yang pernah dibuat langsung di tengah
+            // Description Panel, tetapi pertahankan Image desain di dalam box.
+            foreach (Image candidate in descriptionPanel.GetComponentsInChildren<Image>(true))
+            {
+                if (candidate == productIcon) continue;
+                if (candidate.name.Equals("SelectedProductIcon", StringComparison.OrdinalIgnoreCase) &&
+                    candidate.transform.parent == descriptionPanel)
+                    candidate.gameObject.SetActive(false);
+            }
 
             productIcon.preserveAspect = true;
             productIcon.raycastTarget = false;
@@ -382,12 +537,17 @@ namespace IntegratedApps.Editor
 
             Graphic background = slotTransform.GetComponent<Graphic>();
             slot.backgroundGraphic = background;
-            if (background != null)
-                slot.filledColor = background.color;
+            slot.emptyColor = new Color(0.32f, 0.33f, 0.35f, 0.9f);
+            slot.focusedColor = new Color(0.08f, 0.40f, 0.70f, 1f);
+            slot.filledColor = Color.white;
+            slot.emptyTextColor = new Color(0.72f, 0.73f, 0.75f, 1f);
+            slot.focusedTextColor = Color.white;
+            slot.filledTextColor = Color.white;
+            slot.focusOutlineColor = new Color(0.35f, 0.82f, 1f, 1f);
 
             Outline outline = GetOrAdd<Outline>(slotTransform.gameObject);
             outline.effectColor = slot.focusOutlineColor;
-            outline.effectDistance = new Vector2(3f, -3f);
+            outline.effectDistance = new Vector2(4f, -4f);
             outline.useGraphicAlpha = false;
             outline.enabled = false;
             slot.focusOutline = outline;

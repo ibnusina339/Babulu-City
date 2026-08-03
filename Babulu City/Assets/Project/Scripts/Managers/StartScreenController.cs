@@ -20,7 +20,7 @@ namespace BabuluCity.UI
             if (SceneManager.GetActiveScene().name != StartScreenScene)
                 return;
 
-            StartScreenController controller = FindFirstObjectByType<StartScreenController>();
+            StartScreenController controller = FindAnyObjectByType<StartScreenController>();
             if (controller == null)
             {
                 var controllerObject = new GameObject("StartScreen Controller");
@@ -37,9 +37,7 @@ namespace BabuluCity.UI
 
         void ConfigureButtons()
         {
-            Button[] buttons = FindObjectsByType<Button>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None);
+            Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include);
 
             foreach (Button button in buttons)
             {

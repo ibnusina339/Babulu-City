@@ -44,9 +44,41 @@ namespace ProdukLM
 
         void Awake()
         {
+            ResolveDesignedProductIcon();
             CacheDefaultColors();
             BindButtons();
             RefreshSelection();
+        }
+
+        void ResolveDesignedProductIcon()
+        {
+            if (windowRoot == null)
+                return;
+
+            // Desain terbaru sudah mempunyai tempat ikon besar di dalam box
+            // "deskripsi". Utamakan Image tersebut dan jangan memakai Image
+            // fallback lama yang dibuat di tengah Description Panel.
+            Image preferred = null;
+            foreach (Image image in windowRoot.GetComponentsInChildren<Image>(true))
+            {
+                if (!image.name.Equals("SelectedProductIcon", StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (image.transform.parent != null &&
+                    image.transform.parent.name.Equals("deskripsi", StringComparison.OrdinalIgnoreCase))
+                {
+                    preferred = image;
+                    break;
+                }
+            }
+
+            if (preferred == null || preferred == selectedProductIcon)
+                return;
+
+            if (selectedProductIcon != null)
+                selectedProductIcon.gameObject.SetActive(false);
+            selectedProductIcon = preferred;
+            selectedProductIcon.preserveAspect = true;
+            selectedProductIcon.raycastTarget = false;
         }
 
         void Start()
