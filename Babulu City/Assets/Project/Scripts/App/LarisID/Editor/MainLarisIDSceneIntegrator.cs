@@ -13,7 +13,9 @@ namespace IntegratedApps.Editor
 {
     public static class MainLarisIDSceneIntegrator
     {
-        const int IntegrationVersion = 1;
+        const int IntegrationVersion = 3;
+        const string InstagramYoutubeIconPath = "Assets/assetTama2/igYT.png";
+        const string TikTokIconPath = "Assets/assetTama2/TIKTOK.ICON.png";
 
         [MenuItem("Tools/BRIDA/Integrate Laris.ID Into Main Scene")]
         public static void IntegrateCurrentMainScene()
@@ -63,6 +65,16 @@ namespace IntegratedApps.Editor
                 .FirstOrDefault(item => item.name == "produk.LM")?.gameObject;
             controller.desktopTaskbar = uiRoot.GetComponentsInChildren<Transform>(true)
                 .FirstOrDefault(item => item.name.Equals("taskbar", System.StringComparison.OrdinalIgnoreCase));
+            Sprite[] instagramYoutubeIcons = AssetDatabase.LoadAllAssetsAtPath(InstagramYoutubeIconPath)
+                .OfType<Sprite>()
+                .ToArray();
+            controller.youtubePromotionIcon = instagramYoutubeIcons
+                .FirstOrDefault(sprite => sprite.name == "igYT_0");
+            controller.instagramPromotionIcon = instagramYoutubeIcons
+                .FirstOrDefault(sprite => sprite.name == "igYT_1");
+            controller.tiktokPromotionIcon = AssetDatabase.LoadAllAssetsAtPath(TikTokIconPath)
+                .OfType<Sprite>()
+                .FirstOrDefault();
 
             EditorUtility.SetDirty(manager);
             EditorUtility.SetDirty(controller);
@@ -148,7 +160,8 @@ namespace IntegratedApps.Editor
             bool valid =
                 offers.Count >= 6 && offers.Count <= 8 &&
                 offers.All(item => item.platform == PromotionPlatform.YouTube ||
-                                   item.platform == PromotionPlatform.Instagram) &&
+                                   item.platform == PromotionPlatform.Instagram ||
+                                   item.platform == PromotionPlatform.TikTok) &&
                 manager.Marketplace.DailyHistory.Count == 5 &&
                 buttons >= 20 && inputs >= 4 && scrolls >= 3 &&
                 descriptionTargetWorks && productAppWorks && exitWorks;

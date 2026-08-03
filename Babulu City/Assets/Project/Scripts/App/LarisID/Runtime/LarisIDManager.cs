@@ -90,6 +90,9 @@ namespace LarisID
                 return;
             }
 
+            if (value.Length > 18)
+                value = value.Substring(0, 18).TrimEnd();
+
             product.productName = value;
             LastMessage = $"Nama produk diubah menjadi '{value}'.";
             NotifyChanged();

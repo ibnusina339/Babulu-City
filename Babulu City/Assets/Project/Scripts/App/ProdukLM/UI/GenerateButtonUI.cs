@@ -98,6 +98,15 @@ namespace ProdukLM
                 return;
             }
 
+            ProdukLMGenerationLoadingUI loading = flow.GetComponentInChildren<ProdukLMGenerationLoadingUI>(true);
+            if (loading != null)
+            {
+                if (!loading.Begin(flow))
+                    Debug.LogWarning("Loading Generate ProdukLM gagal dimulai.", this);
+                return;
+            }
+
+            // Fallback untuk scene lama yang belum mempunyai desain loading.
             if (!flow.TryGenerate())
                 Debug.LogWarning("Generate ProdukLM ditolak oleh ProjectFlowManager.", this);
         }

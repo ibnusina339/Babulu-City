@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using ProdukLM;
 using TMPro;
 using UnityEngine;
 
@@ -85,6 +86,10 @@ namespace IntegratedApps
             gameDayOffset++;
             elapsedRealSeconds = 0f;
             reachedEnd = false;
+            // Limit ProdukLM mengikuti hari permainan, bukan tanggal komputer.
+            // Dipanggil langsung dari clock supaya tetap reset walaupun window
+            // ProdukLM atau ProjectFlowManager sedang nonaktif.
+            DailyGenerationCounter.ResetForTesting();
             RefreshDisplay();
             NewDayStarted?.Invoke(gameDayOffset + 1);
         }
@@ -174,7 +179,7 @@ namespace IntegratedApps
         static TMP_Text FindText(params string[] acceptedNames)
         {
             foreach (TMP_Text text in UnityEngine.Object.FindObjectsByType<TMP_Text>(
-                         FindObjectsInactive.Include, FindObjectsSortMode.None))
+                         FindObjectsInactive.Include))
             {
                 foreach (string acceptedName in acceptedNames)
                 {

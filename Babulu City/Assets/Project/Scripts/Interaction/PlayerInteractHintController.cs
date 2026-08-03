@@ -22,13 +22,18 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     [SerializeField] Collider2D laptopArea;
     [SerializeField] Collider2D calendarArea;
     [SerializeField] Collider2D bedArea;
+    [SerializeField] Collider2D playerBodyArea;
     [SerializeField, Min(0f)] float nearbyEdgeDistance = 0.35f;
+    [SerializeField, Min(0f)] float bedContactTolerance = 0.03f;
 
     LaptopProximityController laptopController;
     bool canSleep;
     bool sleeping;
     CanvasGroup sleepFade;
     Vector2Int lastHintResolution;
+    Rect lastSafeArea;
+    Vector2 lastCanvasSize;
+    float lastCanvasScale = -1f;
 
     void Awake()
     {
@@ -39,9 +44,7 @@ public sealed class PlayerInteractHintController : MonoBehaviour
 
     void Update()
     {
-        Vector2Int resolution = new Vector2Int(Screen.width, Screen.height);
-        if (resolution != lastHintResolution)
-            ConfigureHintCanvas();
+        RefreshHintLayoutIfNeeded();
 
         Vector2 playerPosition = transform.position;
         bool desktopOpened = laptopController != null && laptopController.IsLaptopOpened;
@@ -50,7 +53,7 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         bool showCalendar = !desktopOpened && !showLaptop
             && IsNear(calendarArea, playerPosition, nearbyEdgeDistance);
         bool showBed = !desktopOpened && !showLaptop && !showCalendar
-            && IsNear(bedArea, playerPosition, nearbyEdgeDistance);
+            && IsTouching(bedArea, playerBodyArea, bedContactTolerance);
         canSleep = showBed;
 
         SetActive(laptopHint, showLaptop);
@@ -148,6 +151,7 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         laptopArea ??= FindPreferredCollider(laptop, "interact", includeRoot: true);
         calendarArea ??= FindPreferredCollider(calendar, "interact", includeRoot: true);
         bedArea ??= FindPreferredCollider(bed, "batas", includeRoot: false);
+        playerBodyArea ??= GetComponent<Collider2D>();
 
         laptopHint ??= FindTransform("Buka Laptop")?.gameObject;
         calendarHint ??= FindTransform("Lihat Kalender")?.gameObject;
@@ -159,7 +163,8 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         GameObject hint = laptopHint ?? calendarHint ?? bedHint;
         Canvas canvas = hint != null ? hint.GetComponentInParent<Canvas>(true) : null;
         CanvasScaler scaler = canvas != null ? canvas.GetComponent<CanvasScaler>() : null;
-        if (scaler == null)
+        RectTransform canvasRect = canvas != null ? canvas.transform as RectTransform : null;
+        if (scaler == null || canvasRect == null)
             return;
 
         scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
@@ -167,15 +172,42 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.MatchWidthOrHeight;
         scaler.matchWidthOrHeight = 0.5f;
 
-        // Semua hint menempel di kiri bawah dan mengikuti safe area. Dengan
-        // anchor ini, perubahan aspect ratio tidak mendorong hint ke tengah.
-        float scale = Mathf.Max(0.01f, scaler.scaleFactor);
+        // Scale nol pada root Canvas membuat posisi anak terlihat bergeser atau
+        // bahkan menghilang ketika aspect ratio Game View diganti.
+        canvasRect.localScale = Vector3.one;
+        Canvas.ForceUpdateCanvases();
+
+        // Ubah titik safe-area dari koordinat layar ke koordinat lokal Canvas.
+        // Ini lebih stabil daripada membagi pixel dengan scaleFactor secara manual.
         Rect safe = Screen.safeArea;
-        Vector2 safeBottomLeft = new Vector2(safe.xMin / scale, safe.yMin / scale);
-        PositionHint(laptopHint, safeBottomLeft);
-        PositionHint(calendarHint, safeBottomLeft);
-        PositionHint(bedHint, safeBottomLeft);
+        Camera uiCamera = canvas.renderMode == RenderMode.ScreenSpaceOverlay ? null : canvas.worldCamera;
+        RectTransformUtility.ScreenPointToLocalPointInRectangle(
+            canvasRect, safe.min, uiCamera, out Vector2 localSafePoint);
+        Vector2 safeOffset = localSafePoint - canvasRect.rect.min;
+        PositionHint(laptopHint, safeOffset);
+        PositionHint(calendarHint, safeOffset);
+        PositionHint(bedHint, safeOffset);
+
         lastHintResolution = new Vector2Int(Screen.width, Screen.height);
+        lastSafeArea = safe;
+        lastCanvasSize = canvasRect.rect.size;
+        lastCanvasScale = canvas.scaleFactor;
+    }
+
+    void RefreshHintLayoutIfNeeded()
+    {
+        GameObject hint = laptopHint ?? calendarHint ?? bedHint;
+        Canvas canvas = hint != null ? hint.GetComponentInParent<Canvas>(true) : null;
+        RectTransform canvasRect = canvas != null ? canvas.transform as RectTransform : null;
+        Vector2Int resolution = new Vector2Int(Screen.width, Screen.height);
+
+        if (resolution != lastHintResolution
+            || Screen.safeArea != lastSafeArea
+            || (canvasRect != null && canvasRect.rect.size != lastCanvasSize)
+            || (canvas != null && !Mathf.Approximately(canvas.scaleFactor, lastCanvasScale)))
+        {
+            ConfigureHintCanvas();
+        }
     }
 
     static void PositionHint(GameObject hint, Vector2 safeBottomLeft)
@@ -186,6 +218,7 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         rect.anchorMin = Vector2.zero;
         rect.anchorMax = Vector2.zero;
         rect.pivot = new Vector2(0f, 0f);
+        rect.localScale = Vector3.one;
         rect.anchoredPosition = safeBottomLeft + new Vector2(28f, 82f);
     }
 
@@ -223,6 +256,22 @@ public sealed class PlayerInteractHintController : MonoBehaviour
             return true;
 
         return Vector2.Distance(point, area.ClosestPoint(point)) <= distance;
+    }
+
+    static bool IsTouching(Collider2D area, Collider2D playerBody, float tolerance)
+    {
+        if (area == null || playerBody == null
+            || !area.enabled || !playerBody.enabled
+            || !area.gameObject.activeInHierarchy || !playerBody.gameObject.activeInHierarchy)
+        {
+            return false;
+        }
+
+        if (playerBody.IsTouching(area))
+            return true;
+
+        ColliderDistance2D separation = playerBody.Distance(area);
+        return separation.isOverlapped || separation.distance <= tolerance;
     }
 
     static Transform FindTransform(params string[] acceptedNames)

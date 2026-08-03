@@ -17,8 +17,9 @@ namespace IntegratedApps.Editor
 {
     public static class MainProdukLMSceneIntegrator
     {
-        const int CurrentIntegrationVersion = 17;
+        const int CurrentIntegrationVersion = 22;
         const string CardPrefabPath = "Assets/Project/Prefabs/UI/CardPrefab.prefab";
+        const string GenerationLoadingPrefabPath = "Assets/Project/Prefabs/UI/SpecialPage-GenerateScene.prefab";
         const string CardDataFolder = "Assets/Project/Resource/CardData";
         const string PublicPixelFontPath = "Assets/Tilemap/PublicPixel-rv0pA SDF.asset";
 
@@ -88,6 +89,7 @@ namespace IntegratedApps.Editor
             flow.resultPanel = page3.gameObject;
 
             SetupBuilder(page2);
+            SetupGenerationLoading(page2);
             SetupDesktopAndProductSelection(uiRoot.transform, window, page1, page2, flow);
             SetupClock(uiRoot.transform);
 
@@ -105,11 +107,58 @@ namespace IntegratedApps.Editor
                 "Desktop icon, tahap 1, drag-and-drop tahap 2, Back, Generate, dan Close sudah terhubung.");
         }
 
+        static void SetupGenerationLoading(Transform page2)
+        {
+            Transform window = page2.parent;
+            Transform loading = window.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name.Equals(
+                    "SpecialPage-GenerateScene", StringComparison.OrdinalIgnoreCase));
+
+            if (loading == null)
+            {
+                GameObject prefab = AssetDatabase.LoadAssetAtPath<GameObject>(GenerationLoadingPrefabPath);
+                if (prefab == null)
+                    throw new InvalidOperationException(
+                        $"Prefab loading tidak ditemukan di '{GenerationLoadingPrefabPath}'.");
+
+                GameObject instance = (GameObject)PrefabUtility.InstantiatePrefab(prefab, page2);
+                instance.name = "SpecialPage-GenerateScene";
+                loading = instance.transform;
+            }
+
+            // Loading adalah bagian dari Tahap 2. Page2 sengaja tetap aktif
+            // selama coroutine agar overlay ini tidak ikut berhenti.
+            if (loading.parent != page2)
+                loading.SetParent(page2, false);
+
+            RectTransform rect = loading as RectTransform;
+            if (rect != null)
+            {
+                rect.anchorMin = Vector2.zero;
+                rect.anchorMax = Vector2.one;
+                rect.offsetMin = Vector2.zero;
+                rect.offsetMax = Vector2.zero;
+                rect.localScale = Vector3.one;
+            }
+
+            ProdukLMGenerationLoadingUI controller =
+                GetOrAdd<ProdukLMGenerationLoadingUI>(loading.gameObject);
+            controller.freeDurationSeconds = 15f;
+            controller.plusDurationSeconds = 10f;
+            controller.proDurationSeconds = 6f;
+            controller.consumedGameMinutes = 10f;
+            loading.gameObject.SetActive(false);
+
+            EditorUtility.SetDirty(controller);
+            EditorUtility.SetDirty(loading);
+        }
+
         static void SetupBuilder(Transform page2)
         {
             CardData[] catalog = LoadCardCatalog();
 
             Transform libraryRoot = Require(page2, "TabsOpsi");
+            libraryRoot.gameObject.SetActive(true);
             CardLibraryManager library = GetOrAdd<CardLibraryManager>(libraryRoot.gameObject);
             library.cardContainer = libraryRoot;
             library.cardPrefab = AssetDatabase.LoadAssetAtPath<GameObject>(CardPrefabPath)
@@ -152,6 +201,34 @@ namespace IntegratedApps.Editor
             GetOrAdd<GenerateButtonUI>(EnsureButton(generateButton).gameObject);
             SetupPromptResetButton(page2, generateButton, FindReferenceText(page2));
             SetupCurrentOptionIndicator(page2);
+        }
+
+        static void SetupSavedProductConfirmation(Transform libraryRoot, TMP_Text referenceText)
+        {
+            TMP_Text message = EnsureText(
+                libraryRoot,
+                "ProdukTersimpanMessage",
+                referenceText,
+                20f,
+                TextAlignmentOptions.Center);
+            message.text = "PRODUK SUDAH TERSIMPAN KE LARIS.ID";
+            message.textWrappingMode = TextWrappingModes.Normal;
+
+            Image buttonImage = EnsureImage(libraryRoot, "KembaliKeTahap1Button");
+            buttonImage.color = new Color(0.12f, 0.29f, 0.52f, 1f);
+            EnsureButton(buttonImage.transform);
+            TMP_Text label = EnsureText(
+                buttonImage.transform,
+                "Text",
+                referenceText,
+                16f,
+                TextAlignmentOptions.Center);
+            label.text = "KEMBALI KE TAHAP 1";
+
+            message.gameObject.SetActive(false);
+            buttonImage.gameObject.SetActive(false);
+            EditorUtility.SetDirty(message);
+            EditorUtility.SetDirty(buttonImage);
         }
 
         static void SetupCurrentOptionIndicator(Transform page2)
@@ -219,6 +296,11 @@ namespace IntegratedApps.Editor
             ProjectFlowManager flow)
         {
             CardData[] catalog = LoadCardCatalog();
+            Transform limitLabel = page1.GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item => item.name.Equals("Limit", StringComparison.OrdinalIgnoreCase));
+            if (limitLabel != null && limitLabel.GetComponent<TMP_Text>() != null)
+                GetOrAdd<DailyLimitUI>(limitLabel.gameObject);
+
             var options = new List<MainProdukLMWindowUI.ProductOption>
             {
                 ProductOption(page1, "tab/surat", FindCard(catalog, "Template Dokumen")),

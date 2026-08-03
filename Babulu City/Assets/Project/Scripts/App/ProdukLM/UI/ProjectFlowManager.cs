@@ -211,8 +211,10 @@ namespace ProdukLM
 
         public void MarkLastResultSaved()
         {
-            if (HasGeneratedResult)
-                LastResultSaved = true;
+            if (!HasGeneratedResult)
+                return;
+
+            LastResultSaved = true;
         }
 
         public void BeginNewGameDay()

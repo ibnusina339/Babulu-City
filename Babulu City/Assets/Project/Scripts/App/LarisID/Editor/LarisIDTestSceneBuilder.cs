@@ -653,7 +653,7 @@ namespace LarisID.Editor
                 FontStyles.Italic, TextAlignmentOptions.Left, V(0, 0), V(1, 1));
             TMP_Text text = TextObject("Text", viewport, "", 13, Text, FontStyles.Normal,
                 multiline ? TextAlignmentOptions.TopLeft : TextAlignmentOptions.Left, V(0, 0), V(1, 1));
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             input.textViewport = viewport;
             input.textComponent = text;
             input.placeholder = placeholder;
@@ -726,7 +726,7 @@ namespace LarisID.Editor
             text.fontStyle = style;
             text.alignment = alignment;
             text.raycastTarget = false;
-            text.enableWordWrapping = true;
+            text.textWrappingMode = TextWrappingModes.Normal;
             text.overflowMode = TextOverflowModes.Ellipsis;
             return text;
         }

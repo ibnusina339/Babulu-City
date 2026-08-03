@@ -24,6 +24,13 @@ namespace ProdukLM
         Button retryButton;
         Button saveButton;
         Button exitButton;
+        Button savedBackButton;
+        Transform backgroundMenu;
+        Transform topBar;
+        Transform productLMBrand;
+        Transform leftPanel;
+        Transform rightPanel;
+        GameObject savedMessageObject;
         Transform qualityBox;
         Transform relevanceBox;
         Transform sellValueBox;
@@ -54,6 +61,7 @@ namespace ProdukLM
             retryButton?.onClick.RemoveListener(Retry);
             saveButton?.onClick.RemoveListener(SaveProduct);
             exitButton?.onClick.RemoveListener(CloseWindow);
+            savedBackButton?.onClick.RemoveListener(ReturnToStageOne);
             if (productNameInput != null)
             {
                 productNameInput.onSelect.RemoveListener(BeginNameEdit);
@@ -75,6 +83,13 @@ namespace ProdukLM
             retryButton = EnsureButton(Find("FrameBuatUlang"));
             saveButton = EnsureButton(Find("frameSimpanProduk"));
             exitButton = EnsureButton(Find("exittab"));
+            backgroundMenu = Find("bg_menu (2)") ?? Find("bg_menu");
+            topBar = Find("TopBar (1)");
+            productLMBrand = Find("ProdukLM Title");
+            leftPanel = Find("PanelKiri");
+            rightPanel = Find("PanelKanan");
+            savedMessageObject = Find("ProdukTersimpanMessage")?.gameObject;
+            savedBackButton = ResolveSavedBackButton();
 
             if (exitButton != null)
             {
@@ -95,7 +110,7 @@ namespace ProdukLM
                 productNameInput.targetGraphic = inputBox.GetComponent<Graphic>();
                 productNameInput.textComponent = productNameText;
                 productNameInput.textViewport = productNameText != null ? productNameText.rectTransform : null;
-                productNameInput.characterLimit = 48;
+                productNameInput.characterLimit = 18;
                 productNameInput.lineType = TMP_InputField.LineType.SingleLine;
                 productNameInput.onSelect.AddListener(BeginNameEdit);
                 productNameInput.onEndEdit.AddListener(CommitName);
@@ -107,6 +122,7 @@ namespace ProdukLM
             retryButton?.onClick.AddListener(Retry);
             saveButton?.onClick.AddListener(SaveProduct);
             exitButton?.onClick.AddListener(CloseWindow);
+            savedBackButton?.onClick.AddListener(ReturnToStageOne);
         }
 
         void Refresh()
@@ -116,6 +132,7 @@ namespace ProdukLM
                 return;
 
             saved = flow.LastResultSaved;
+            SetResultContentVisible(!saved);
             CardData product = flow.State.GetCard(SlotType.ProductType);
             string defaultName = product != null ? product.displayName : "Produk Digital";
 
@@ -173,6 +190,8 @@ namespace ProdukLM
                 cleaned = string.IsNullOrWhiteSpace(committedProductName)
                     ? "Produk Digital"
                     : committedProductName;
+            if (cleaned.Length > 18)
+                cleaned = cleaned.Substring(0, 18).TrimEnd();
 
             committedProductName = cleaned;
             if (productNameInput != null)
@@ -224,6 +243,78 @@ namespace ProdukLM
             saved = true;
             flow.MarkLastResultSaved();
             if (saveButton != null) saveButton.interactable = false;
+            ShowSavedState();
+        }
+
+        void ShowSavedState()
+        {
+            if (savedBackButton != null && backgroundMenu != null &&
+                !savedBackButton.transform.IsChildOf(backgroundMenu))
+                savedBackButton.transform.SetParent(backgroundMenu, true);
+
+            SetResultContentVisible(false);
+            if (backgroundMenu != null)
+                backgroundMenu.gameObject.SetActive(true);
+            if (savedBackButton != null)
+                savedBackButton.gameObject.SetActive(true);
+        }
+
+        void SetResultContentVisible(bool visible)
+        {
+            if (topBar != null)
+            {
+                // Topbar tetap hidup sesudah produk disimpan agar tombol Exit
+                // selalu dapat digunakan. Isi topbar lain disembunyikan.
+                topBar.gameObject.SetActive(true);
+                foreach (Transform child in topBar)
+                {
+                    bool containsExit = exitButton != null &&
+                        (child == exitButton.transform || exitButton.transform.IsChildOf(child));
+                    bool containsProductLMBrand = productLMBrand != null &&
+                        (child == productLMBrand || productLMBrand.IsChildOf(child));
+                    child.gameObject.SetActive(visible || containsExit || containsProductLMBrand);
+                }
+                if (exitButton != null)
+                    exitButton.gameObject.SetActive(true);
+                if (productLMBrand != null)
+                    productLMBrand.gameObject.SetActive(true);
+            }
+            if (leftPanel != null) leftPanel.gameObject.SetActive(visible);
+            if (rightPanel != null) rightPanel.gameObject.SetActive(visible);
+            if (backgroundMenu != null) backgroundMenu.gameObject.SetActive(true);
+            if (savedBackButton != null)
+                savedBackButton.gameObject.SetActive(!visible);
+            if (savedMessageObject != null)
+                savedMessageObject.SetActive(!visible);
+        }
+
+        void ReturnToStageOne()
+        {
+            ProjectFlowManager.Instance?.BackToStart();
+        }
+
+        Button ResolveSavedBackButton()
+        {
+            Transform candidate = GetComponentsInChildren<Transform>(true)
+                .FirstOrDefault(item =>
+                    item.name.Contains("kembali", StringComparison.OrdinalIgnoreCase) ||
+                    item.name.Contains("back", StringComparison.OrdinalIgnoreCase));
+
+            if (candidate == null)
+            {
+                TMP_Text label = GetComponentsInChildren<TMP_Text>(true)
+                    .FirstOrDefault(text =>
+                        text.text.Contains("kembali", StringComparison.OrdinalIgnoreCase));
+                candidate = label != null ? label.transform : null;
+            }
+
+            while (candidate != null && candidate != transform &&
+                   candidate.GetComponent<Graphic>() == null)
+                candidate = candidate.parent;
+
+            return candidate != null && candidate != transform
+                ? EnsureButton(candidate)
+                : null;
         }
 
         void ResolveTierTexts()
