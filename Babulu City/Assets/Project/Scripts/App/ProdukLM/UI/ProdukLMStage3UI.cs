@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using BabuluCity.Core;
 using LarisID;
 using TMPro;
 using UnityEngine;
@@ -436,8 +437,10 @@ namespace ProdukLM
         static Button EnsureButton(Transform target)
         {
             if (target == null) return null;
-            Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (!target.TryGetComponent(out Button button))
+                button = target.gameObject.AddComponent<Button>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             return button;
         }
     }
@@ -445,6 +448,8 @@ namespace ProdukLM
     static class ProdukLMStage3Bootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             foreach (Transform candidate in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))

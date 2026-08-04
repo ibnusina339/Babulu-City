@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using BabuluCity.Core;
 using TMPro;
 using UnityEngine;
 
@@ -82,6 +83,8 @@ namespace ProdukLM
     static class CurrentPromptOptionBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             foreach (Transform item in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))

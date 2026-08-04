@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using BabuluCity.Core;
 using IntegratedApps;
 using LarisID;
 using ProdukLM;
@@ -38,7 +39,7 @@ namespace BabuluCity.SaveSystem
         const string MainScene = "Main";
         const string StartScreenScene = "StartScreen";
 
-        [SerializeField, Min(30f)] float autosaveIntervalSeconds = 150f;
+        [SerializeField, Min(30f)] float autosaveIntervalSeconds = 180f;
 
         static GameSaveManager instance;
         float nextAutosaveTime;
@@ -259,8 +260,14 @@ namespace BabuluCity.SaveSystem
         static bool IsEditingText()
         {
             GameObject selected = EventSystem.current?.currentSelectedGameObject;
-            TMP_InputField input = selected?.GetComponent<TMP_InputField>() ??
-                                   selected?.GetComponentInParent<TMP_InputField>();
+            if (selected == null)
+                return false;
+
+            // GetComponent memberi "fake null" di Editor bila komponen tidak
+            // ada, sehingga ?? tidak pernah jatuh ke pencarian parent.
+            TMP_InputField input = selected.TryGetComponent(out TMP_InputField field)
+                ? field
+                : selected.GetComponentInParent<TMP_InputField>();
             return input != null && input.isFocused;
         }
 
@@ -287,8 +294,10 @@ namespace BabuluCity.SaveSystem
         {
             if (target == null)
                 return null;
-            Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (!target.TryGetComponent(out Button button))
+                button = target.gameObject.AddComponent<Button>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             return button;
         }
     }
@@ -296,6 +305,8 @@ namespace BabuluCity.SaveSystem
     static class GameSaveBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             if (SceneManager.GetActiveScene().name != "Main" ||

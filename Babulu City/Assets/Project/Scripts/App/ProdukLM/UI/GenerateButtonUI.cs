@@ -13,7 +13,8 @@ namespace ProdukLM
         void Awake()
         {
             button = GetComponent<Button>();
-            button.targetGraphic ??= GetComponent<Graphic>();
+            if (button.targetGraphic == null && TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             if (button.targetGraphic != null)
                 button.targetGraphic.raycastTarget = true;
             button.onClick.AddListener(OnClick);

@@ -1,4 +1,5 @@
 using System.Collections;
+using BabuluCity.Core;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -52,7 +53,10 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (IsEditingText())
             return;
 
-        bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame;
+        // Ctrl+Shift+Alt+E adalah pintasan menuju ENDING, bukan perintah
+        // membuka atau menutup laptop.
+        bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame &&
+                               !EndingShortcut.ShortcutModifiersHeld;
         bool escapePressed = Keyboard.current.escapeKey.wasPressedThisFrame;
 
         if (laptopOpened)
@@ -73,8 +77,11 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (selected == null)
             return false;
 
-        TMP_InputField input = selected.GetComponent<TMP_InputField>() ??
-                               selected.GetComponentInParent<TMP_InputField>();
+        // GetComponent memberi "fake null" di Editor bila komponen tidak ada,
+        // sehingga ?? tidak pernah jatuh ke pencarian parent.
+        TMP_InputField input = selected.TryGetComponent(out TMP_InputField field)
+            ? field
+            : selected.GetComponentInParent<TMP_InputField>();
         return input != null && input.isFocused;
     }
 

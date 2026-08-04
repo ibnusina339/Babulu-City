@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using IntegratedApps;
+using BabuluCity.Core;
 using BabuluCity.SaveSystem;
 using LarisID;
 using ProdukLM;
@@ -70,7 +71,10 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         SetActive(calendarHint, showCalendar);
         SetActive(bedHint, showBed);
 
-        if (canSleep && !sleeping && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
+        // Ctrl+Shift+Alt+E adalah pintasan menuju ENDING, bukan perintah tidur.
+        if (canSleep && !sleeping && Keyboard.current != null &&
+            Keyboard.current.eKey.wasPressedThisFrame &&
+            !EndingShortcut.ShortcutModifiersHeld)
             RequestSleep();
     }
 
@@ -108,7 +112,6 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         EnsureSleepFade();
 
         SetActive(sleepBlackScreen, true);
-        EnsureSleepFade();
         yield return FadeSleep(0f, 1f, 0.55f);
 
         GameClockUI clock = UnityEngine.Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
@@ -155,8 +158,12 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         if (sleepFade != null) return;
         if (sleepBlackScreen != null)
         {
-            sleepFade = sleepBlackScreen.GetComponent<CanvasGroup>() ??
-                        sleepBlackScreen.AddComponent<CanvasGroup>();
+            // GetComponent mengembalikan objek "fake null" di Editor bila
+            // komponen tidak ada. Operator ?? tidak memakai operator == milik
+            // Unity, sehingga AddComponent tidak pernah dijalankan dan baris
+            // berikutnya melempar MissingComponentException.
+            if (!sleepBlackScreen.TryGetComponent(out sleepFade))
+                sleepFade = sleepBlackScreen.AddComponent<CanvasGroup>();
             sleepFade.alpha = 0f;
             sleepFade.blocksRaycasts = false;
             return;
@@ -256,8 +263,10 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     {
         if (target == null)
             return null;
-        Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
-        button.targetGraphic ??= target.GetComponent<Graphic>();
+        if (!target.TryGetComponent(out Button button))
+            button = target.gameObject.AddComponent<Button>();
+        if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+            button.targetGraphic = graphic;
         return button;
     }
 
@@ -408,6 +417,8 @@ public sealed class PlayerInteractHintController : MonoBehaviour
 static class PlayerInteractHintBootstrap
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+    static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
     static void Install()
     {
         PlayerMovement player = UnityEngine.Object.FindAnyObjectByType<PlayerMovement>(FindObjectsInactive.Include);

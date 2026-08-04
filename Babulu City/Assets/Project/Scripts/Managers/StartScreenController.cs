@@ -1,4 +1,5 @@
 using TMPro;
+using BabuluCity.Core;
 using BabuluCity.SaveSystem;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -17,8 +18,13 @@ namespace BabuluCity.UI
         GameObject newGamePopup;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
-        static void InstallOnStartScreen()
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
+        static void Install()
         {
+            // Controller ini tidak disimpan di dalam scene StartScreen, jadi
+            // harus dipasang ulang setiap scene tersebut dimuat. Tanpa itu,
+            // kembali dari scene Main membuat tombol Mulai/Lanjutkan mati.
             if (SceneManager.GetActiveScene().name != StartScreenScene)
                 return;
 
@@ -90,11 +96,20 @@ namespace BabuluCity.UI
 
         void ResolveNewGamePopup()
         {
-            newGamePopup = FindTransform("NewGameConfirmPopup")?.gameObject;
+            // "BacktoStartScreen" adalah prefab konfirmasi ESC yang sama dari
+            // scene Main, dipakai ulang di sini dengan teks "Mulai Ulang?".
+            // Nama GameObject dan tombolnya tetap mengikuti prefab asli.
+            newGamePopup = FindTransform("NewGameConfirmPopup")?.gameObject
+                ?? FindTransform("BacktoStartScreen")?.gameObject;
             if (newGamePopup == null)
                 return;
-            Button confirm = FindTransform("Confirm New Game", newGamePopup.transform)?.GetComponent<Button>();
-            Button cancel = FindTransform("Cancel New Game", newGamePopup.transform)?.GetComponent<Button>();
+
+            Transform panel = FindTransform("keluar konfirm", newGamePopup.transform) ?? newGamePopup.transform;
+            Button confirm = FindButton(newGamePopup.transform, "Confirm New Game")
+                ?? FindButton(panel, "Keluar BUtton")
+                ?? FindButton(panel, "Keluar Button");
+            Button cancel = FindButton(newGamePopup.transform, "Cancel New Game")
+                ?? FindButton(panel, "Kembali Button");
             if (confirm != null)
             {
                 confirm.onClick.RemoveAllListeners();
@@ -106,6 +121,20 @@ namespace BabuluCity.UI
                 cancel.onClick.AddListener(() => newGamePopup.SetActive(false));
             }
             newGamePopup.SetActive(false);
+        }
+
+        /// <summary>
+        /// GetComponent mengembalikan objek "fake null" di Editor bila komponen
+        /// tidak ada, dan operator ?? tidak memakai operator == milik Unity.
+        /// Helper ini memastikan hasilnya benar-benar null agar rantai fallback
+        /// nama tombol tetap berjalan.
+        /// </summary>
+        static Button FindButton(Transform root, string objectName)
+        {
+            Transform target = FindTransform(objectName, root);
+            if (target == null || !target.TryGetComponent(out Button button))
+                return null;
+            return button;
         }
 
         static Transform FindTransform(string objectName, Transform root = null)

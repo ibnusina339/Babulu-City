@@ -1,3 +1,4 @@
+using BabuluCity.Core;
 using TMPro;
 using UnityEngine;
 
@@ -74,6 +75,8 @@ namespace ProdukLM
     static class DailyLimitUIBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             foreach (TMP_Text text in Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include))

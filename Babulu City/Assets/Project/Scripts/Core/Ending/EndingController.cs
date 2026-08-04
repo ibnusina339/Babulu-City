@@ -1,3 +1,4 @@
+using BabuluCity.Core;
 using BabuluCity.SaveSystem;
 using TMPro;
 using UnityEngine;
@@ -8,29 +9,30 @@ namespace BabuluCity.Ending
 {
     public sealed class EndingController : MonoBehaviour
     {
+        // Rows = Penjualan (Rendah, Sedang, Tinggi), Columns = Prestasi (Rendah, Sedang, Tinggi)
         static readonly string[,] Titles =
         {
-            { "Langkah Pertama", "Mulai Dikenal", "Pedagang Gigih" },
-            { "Pelajar Konsisten", "Seimbang dan Bertumbuh", "Strategi Cemerlang" },
-            { "Ilmu sebagai Modal", "Kreator Berprestasi", "Bintang Digital Babulu" }
+            { "Masa depan Yang Suram", "Monumen Keindahan Sepi", "Anak OSN Salah Kegiatan" },
+            { "Pemuas Kebutuhan Sesaat", "Harmony in Equilibrium", "Sang Penjaga Lentera Ilmu" },
+            { "Tahta Cuan Tanpa Mahkota", "Penguasa Algoritma Masa Depan", "CEO Muda Yang Genius" }
         };
 
         static readonly string[,] Descriptions =
         {
             {
-                "Kamu baru memulai perjalanan. Belajar dan penjualan masih rendah, tetapi pengalaman pertama sudah menjadi modal penting.",
-                "Walau waktu belajar belum maksimal, tokomu mulai menemukan pembeli dan arah bisnis yang menjanjikan.",
-                "Penjualanmu sangat kuat. Tantangan berikutnya adalah menyeimbangkan kesuksesan bisnis dengan prestasi belajar."
+                "Akun terblokir, tautan hangus, dan sisa nilai rapormu tak sanggup menyelamatkanmu.",
+                "Sebuah mahakarya visual di balik bio, yang hanya dikunjungi oleh angin malam.",
+                "Walau kamu pintar, sayangnya toko kamu sepi. Mungkin sebaiknya kamu fokus akademik saja."
             },
             {
-                "Kamu cukup konsisten mengikuti bimbel, tetapi strategi toko masih perlu diasah agar hasilnya ikut meningkat.",
-                "Prestasi dan bisnis berkembang bersama. Kamu berhasil menjaga ritme yang sehat selama satu minggu.",
-                "Belajar yang konsisten mendukung keputusan bisnis yang tajam dan menghasilkan penjualan tinggi."
+                "Hanya menyalakan mesin jualan ketika dompet menjerit, lalu kembali terlelap.",
+                "Di antara riuh lalu lintas internet dan sunyinya ruang ujian, kamu menemukan kedamaian.",
+                "Materi PDF buatanmu menyinari jalan puluhan siswa yang tersesat di malam ujian."
             },
             {
-                "Prestasi belajarmu sangat baik. Sekarang saatnya memakai pengetahuan itu untuk memperkuat strategi penjualan.",
-                "Kamu menuntaskan seluruh bimbel dan membangun toko yang sehat. Fondasi masa depanmu sangat kuat.",
-                "Kamu menguasai pembelajaran sekaligus bisnis digital. Inilah pencapaian tertinggi perjalananmu di Babulu City."
+                "Puluhan transaksi mengalir di biolink-mu setiap malam, tapi raportmu berdarah (nilai merah).",
+                "Setiap tautan yang kamu bagikan adalah perintah bagi pasar untuk bertindak.",
+                "Menguasai pasar digital sebelum lulus SMA, menakhlukkan universitas impian tanpa cela."
             }
         };
 
@@ -43,12 +45,12 @@ namespace BabuluCity.Ending
                 : 0L;
 
             int studyTier = sessions <= 1 ? 0 : sessions <= 3 ? 1 : 2;
-            int salesTier = revenue < 500000 ? 0 : revenue <= 1500000 ? 1 : 2;
-            int endingNumber = studyTier * 3 + salesTier + 1;
+            int salesTier = revenue < 500000 ? 0 : revenue < 1500000 ? 1 : 2;
+            int endingNumber = salesTier * 3 + studyTier + 1;
 
             SetText("Ending number", $"ENDING KE-{endingNumber}");
-            SetText("Ending Title", Titles[studyTier, salesTier]);
-            SetText("Ending deskripsi", Descriptions[studyTier, salesTier]);
+            SetText("Ending Title", Titles[salesTier, studyTier]);
+            SetText("Ending deskripsi", Descriptions[salesTier, studyTier]);
             SetText("Jumlah Bimbel", $"TOTAL BIMBEL  {sessions}/4");
             SetText("jumlah Pendapatan", $"TOTAL PENDAPATAN  Rp {revenue:N0}");
 
@@ -79,6 +81,8 @@ namespace BabuluCity.Ending
     static class EndingBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             if (SceneManager.GetActiveScene().name != "ENDING" ||

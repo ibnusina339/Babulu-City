@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
+using BabuluCity.Core;
 using BabuluCity.SaveSystem;
 using UnityEngine;
 using UnityEngine.UI;
@@ -175,7 +176,7 @@ namespace IntegratedApps
             gameClock = Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
             desktopAppButton ??= FindIn(uiRoot, "VentraMeet APP", "VentraMeet App")?.gameObject;
             confirmationScreen ??= FindIn(transform, "KonfirmasiScreen")?.gameObject;
-            unavailableScreen ??= FindIn(transform, "Batas Bimbel")?.gameObject;
+            unavailableScreen ??= FindIn(transform, "Batas Bimbel", "Tidak ada Jadwal")?.gameObject;
             missedScheduleScreen ??= FindSceneObject("Jadwal terlewat");
             studyScreen ??= FindIn(transform, "Zoom")?.gameObject;
             fastForwardRoot ??= FindIn(studyScreen?.transform, "FastForward Animation")?.gameObject;
@@ -315,8 +316,10 @@ namespace IntegratedApps
         {
             if (target == null)
                 return null;
-            Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (!target.TryGetComponent(out Button button))
+                button = target.gameObject.AddComponent<Button>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             return button;
         }
 
@@ -330,6 +333,8 @@ namespace IntegratedApps
     static class VentraMeetBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             foreach (Transform candidate in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))

@@ -1,3 +1,4 @@
+using BabuluCity.Core;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
@@ -19,6 +20,8 @@ namespace BabuluCity.Ending
     static class CreditsBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             if (SceneManager.GetActiveScene().name != "Credits" ||

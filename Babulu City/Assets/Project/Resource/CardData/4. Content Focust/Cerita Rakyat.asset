@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: Cerita Rakyat
   m_EditorClassIdentifier: Assembly-CSharp::ProdukLM.CardData
   cardId: CF_CeritaRakyat
-  displayName: Certita Rakyat
+  displayName: Cerita Rakyat
   slotType: 3
   icon: {fileID: 0}
   promptFragment: cerita rakyat

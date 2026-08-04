@@ -715,7 +715,11 @@ namespace LarisID
             pricePopupTitle = FindText(priceBox, "Title Pop Up");
             pricePopupRange = FindText(priceBox, "Rentang Harga");
             pricePopupIdeal = FindText(priceBox, "Rekomendasi");
-            pricePopupValue = FindText(FindNamed(priceBox, "price bg"), "Text (TMP)");
+            // Teks nilai harga pada desain bernama "Harga", bukan "Text (TMP)".
+            // Bila tidak ditemukan, popup hanya menampilkan teks placeholder
+            // desain dan tombol +/- terlihat tidak berfungsi walaupun nilainya
+            // sebenarnya berubah.
+            pricePopupValue = FindText(FindNamed(priceBox, "price bg"), "Harga", "Text (TMP)");
             priceMinusButton = BindClick(FindNamed(priceBox, "Reduce price button"), () => ChangePendingPrice(-1000));
             pricePlusButton = BindClick(FindNamed(priceBox, "Add price button"), () => ChangePendingPrice(1000));
             priceConfirmButton = BindClick(FindNamed(priceBox, "Set Harga Button"), ConfirmPricePopup);
@@ -1237,7 +1241,7 @@ namespace LarisID
             input.textViewport = text.rectTransform;
             input.textComponent = text;
             text.raycastTarget = true;
-            input.targetGraphic = host.GetComponent<Graphic>() ?? text;
+            input.targetGraphic = host.TryGetComponent(out Graphic hostGraphic) ? hostGraphic : text;
             input.contentType = contentType;
             input.lineType = lineType;
             input.richText = false;
@@ -1276,7 +1280,8 @@ namespace LarisID
             Button button = target.GetComponent<Button>();
             if (button == null) button = target.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             if (action != null)
             {
                 button.onClick.RemoveAllListeners();
@@ -1292,7 +1297,8 @@ namespace LarisID
             Button button = target.GetComponent<Button>();
             if (button == null) button = target.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             if (action != null)
                 button.onClick.AddListener(() => action());
             return button;

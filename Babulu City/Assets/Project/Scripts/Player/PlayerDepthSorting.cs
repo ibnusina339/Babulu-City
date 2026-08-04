@@ -48,9 +48,7 @@ public sealed class PlayerDepthSorting : MonoBehaviour
         playerRenderer ??= GetComponent<SpriteRenderer>();
         occluderRenderers.Clear();
 
-        Transform roomRoot = FindObjectsByType<Transform>(
-                FindObjectsInactive.Include,
-                FindObjectsSortMode.None)
+        Transform roomRoot = FindObjectsByType<Transform>(FindObjectsInactive.Include)
             .FirstOrDefault(item =>
                 item.name.Equals(roomRootName, StringComparison.OrdinalIgnoreCase));
         if (roomRoot == null || occluderNames == null)
@@ -67,8 +65,11 @@ public sealed class PlayerDepthSorting : MonoBehaviour
             if (target == null)
                 continue;
 
-            Renderer renderer = target.GetComponent<Renderer>() ??
-                                target.GetComponentInChildren<Renderer>(true);
+            // GetComponent memberi "fake null" di Editor bila komponen tidak
+            // ada, sehingga ?? tidak pernah jatuh ke pencarian child.
+            Renderer renderer = target.TryGetComponent(out Renderer directRenderer)
+                ? directRenderer
+                : target.GetComponentInChildren<Renderer>(true);
             if (renderer != null && !occluderRenderers.Contains(renderer))
                 occluderRenderers.Add(renderer);
         }

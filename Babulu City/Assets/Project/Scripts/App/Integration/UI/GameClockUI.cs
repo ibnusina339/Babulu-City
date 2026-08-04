@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using BabuluCity.Core;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
@@ -163,6 +164,8 @@ namespace IntegratedApps
     static class GameClockBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(RestoreClockIfMissing);
+
         static void RestoreClockIfMissing()
         {
             GameClockUI existing = UnityEngine.Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
