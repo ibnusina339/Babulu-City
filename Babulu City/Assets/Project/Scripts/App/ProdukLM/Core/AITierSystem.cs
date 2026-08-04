@@ -1,46 +1,14 @@
-using System;
-using System.Globalization;
 using UnityEngine;
 
 namespace ProdukLM
 {
-    public enum AITier
-    {
-        Free,
-        Plus,
-        Pro
-    }
-
-    public static class AITierStats
-    {
-        public static StatsResult ApplyBoost(StatsResult source, float improvementPercent)
-        {
-            float boost = Mathf.Clamp01(improvementPercent);
-            int quality = Improve(source.Quality, boost);
-            int relevance = Improve(source.Relevansi, boost * 0.55f);
-            int sellValue = Mathf.RoundToInt(quality * 0.60f + relevance * 0.40f);
-
-            return new StatsResult
-            {
-                Quality = quality,
-                Relevansi = relevance,
-                NilaiJual = Mathf.Clamp(sellValue, 0, 100)
-            };
-        }
-
-        static int Improve(int value, float percent)
-        {
-            int clamped = Mathf.Clamp(value, 0, 100);
-            return Mathf.Clamp(
-                clamped + Mathf.RoundToInt((100 - clamped) * percent),
-                0,
-                100);
-        }
-    }
+    // Sistem AI Tier (Free/Plus/Pro) sudah dihapus dari permainan. Kualitas
+    // hasil kini murni berasal dari skor Affinity/Neutral/Conflict pada
+    // StatsCalculator, dan limit harian memakai satu nilai umum di
+    // ProjectFlowManager.
 
     public static class DailyGenerationCounter
     {
-        const string DailyDateKey = "ProdukLM.DailyProductDate";
         const string DailyCountKey = "ProdukLM.DailyProductCount";
 
         public static int Count
@@ -66,14 +34,10 @@ namespace ProdukLM
 
         public static bool EnsureCurrent()
         {
-            string today = DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);
-            if (PlayerPrefs.GetString(DailyDateKey, string.Empty) == today)
-                return false;
-
-            PlayerPrefs.SetString(DailyDateKey, today);
-            PlayerPrefs.SetInt(DailyCountKey, 0);
-            PlayerPrefs.Save();
-            return true;
+            // Reset limit mengikuti BeginNextDay pada waktu game, bukan tanggal
+            // komputer. Ini mencegah limit tiba-tiba penuh/kosong setelah tidur,
+            // ganti tanggal OS, atau kembali fokus ke Unity.
+            return false;
         }
 
         public static void ResetForTesting()
@@ -84,9 +48,6 @@ namespace ProdukLM
 
         public static void RestoreCount(int count)
         {
-            PlayerPrefs.SetString(
-                DailyDateKey,
-                DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             PlayerPrefs.SetInt(DailyCountKey, Mathf.Max(0, count));
             PlayerPrefs.Save();
         }
@@ -97,9 +58,6 @@ namespace ProdukLM
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         static void ResetForNewPlaySession()
         {
-            PlayerPrefs.SetString(
-                DailyDateKey,
-                DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
             PlayerPrefs.SetInt(DailyCountKey, 0);
             PlayerPrefs.Save();
         }

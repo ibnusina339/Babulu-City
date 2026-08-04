@@ -5,7 +5,7 @@ using UnityEngine.Serialization;
 
 namespace ProdukLM
 {
-    // Tier dan limit pada manager ini juga dipakai oleh scene ProdukLM lama.
+    // Limit tunggal pada manager ini juga dipakai oleh scene ProdukLM lama.
     // Taruh script ini di satu GameObject kosong, misal "GameManager".
     // Semua script lain (SlotUI, CardUI, CardLibraryManager, dst) manggil
     // ProjectFlowManager.Instance buat baca/ubah state.
@@ -21,31 +21,20 @@ namespace ProdukLM
         public bool HasGeneratedResult { get; private set; }
         public bool LastResultSaved { get; private set; }
 
-        [Header("Tier AI")]
-        [SerializeField] AITier currentTier = AITier.Free;
-        [SerializeField, Range(0f, 0.8f)] float freeQualityBoost;
-        [SerializeField, Range(0f, 0.8f)] float plusQualityBoost = 0.18f;
-        [SerializeField, Range(0f, 0.8f)] float proQualityBoost = 0.32f;
+        [Header("Kalibrasi skor hubungan slot (Inspector)")]
+        [Tooltip("Skor untuk pasangan kartu yang cocok.")]
+        [SerializeField] int affinityScore = StatsCalculator.DefaultAffinityScore;
+        [Tooltip("Skor untuk pasangan kartu tanpa relasi.")]
+        [SerializeField] int neutralScore = StatsCalculator.DefaultNeutralScore;
+        [Tooltip("Skor untuk pasangan kartu yang bertentangan.")]
+        [SerializeField] int conflictScore = StatsCalculator.DefaultConflictScore;
 
-        [Header("Limit harian per tier (bisa diatur di Inspector)")]
-        [FormerlySerializedAs("dailyProductLimit")]
-        [SerializeField, Min(1)] int freeDailyLimit = 5;
-        [SerializeField, Min(1)] int plusDailyLimit = 8;
-        [SerializeField, Min(1)] int proDailyLimit = 12;
+        [Header("Limit produksi harian (bisa diatur di Inspector)")]
+        [Tooltip("Jumlah produk yang boleh dibuat setiap hari permainan.")]
+        [FormerlySerializedAs("freeDailyLimit")]
+        [SerializeField, Min(1)] int dailyProductLimit = 5;
 
-        public AITier CurrentTier => currentTier;
-        public int DailyProductLimit
-        {
-            get
-            {
-                return currentTier switch
-                {
-                    AITier.Plus => Mathf.Max(1, plusDailyLimit),
-                    AITier.Pro => Mathf.Max(1, proDailyLimit),
-                    _ => Mathf.Max(1, freeDailyLimit)
-                };
-            }
-        }
+        public int DailyProductLimit => Mathf.Max(1, dailyProductLimit);
         public int ProductsCreatedToday => DailyGenerationCounter.Count;
         public int RemainingProductsToday => DailyGenerationCounter.Remaining(DailyProductLimit);
         public bool CanCreateProductToday => RemainingProductsToday > 0;
@@ -54,7 +43,6 @@ namespace ProdukLM
         public event Action OnSlotChanged;
         public event Action OnGenerated; // dipanggil StatsResultUI setelah tombol Generate ditekan
         public event Action OnDailyLimitChanged;
-        public event Action OnAITierChanged;
         public event Action<string> OnGenerationBlocked;
 
         [Header("Referensi panel (drag di Inspector)")]
@@ -84,9 +72,26 @@ namespace ProdukLM
             }
 
             Instance = this;
+            ApplyAffinityCalibration();
             DailyGenerationCounter.EnsureCurrent();
             OnInstanceReady?.Invoke(this);
         }
+
+        void ApplyAffinityCalibration()
+        {
+            StatsCalculator.AffinityScore = affinityScore;
+            StatsCalculator.NeutralScore = neutralScore;
+            StatsCalculator.ConflictScore = conflictScore;
+        }
+
+#if UNITY_EDITOR
+        // Nilai baru langsung terasa saat diubah dari Inspector ketika Play Mode.
+        void OnValidate()
+        {
+            if (Application.isPlaying && Instance == this)
+                ApplyAffinityCalibration();
+        }
+#endif
 
         void OnDestroy()
         {
@@ -137,9 +142,8 @@ namespace ProdukLM
                 return false;
             }
 
-            LastResult = AITierStats.ApplyBoost(
-                StatsCalculator.Calculate(State),
-                GetCurrentQualityBoost());
+            // Kualitas hasil murni dari skor Affinity/Neutral/Conflict.
+            LastResult = StatsCalculator.Calculate(State);
             LastFeedback = FeedbackGenerator.Generate(State);
             HasGeneratedResult = true;
             LastResultSaved = false;
@@ -199,16 +203,6 @@ namespace ProdukLM
                 BackToStart();
         }
 
-        public void SetAITier(AITier tier)
-        {
-            if (currentTier == tier)
-                return;
-
-            currentTier = tier;
-            OnAITierChanged?.Invoke();
-            OnDailyLimitChanged?.Invoke();
-        }
-
         public void MarkLastResultSaved()
         {
             if (!HasGeneratedResult)
@@ -255,16 +249,6 @@ namespace ProdukLM
         {
             DailyGenerationCounter.Consume();
             OnDailyLimitChanged?.Invoke();
-        }
-
-        float GetCurrentQualityBoost()
-        {
-            return currentTier switch
-            {
-                AITier.Plus => plusQualityBoost,
-                AITier.Pro => proQualityBoost,
-                _ => freeQualityBoost
-            };
         }
     }
 }

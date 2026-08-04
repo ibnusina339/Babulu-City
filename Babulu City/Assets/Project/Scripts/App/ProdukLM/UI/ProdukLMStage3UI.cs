@@ -11,11 +11,6 @@ namespace ProdukLM
     [DisallowMultipleComponent]
     public sealed class ProdukLMStage3UI : MonoBehaviour
     {
-        TMP_Text fallbackTierText;
-        TMP_Text tierText => null; // kompatibilitas layout lama; header tidak lagi dipakai untuk tier
-        GameObject freeTierText;
-        GameObject plusTierText;
-        GameObject proTierText;
         TMP_Text statusText;
         TMP_Text productTypeText;
         TMP_Text recommendationText;
@@ -72,7 +67,7 @@ namespace ProdukLM
 
         void ResolveUI()
         {
-            ResolveTierTexts();
+            HideLegacyTierTexts();
             statusText = TextOf(Find("Status.TXT"));
             productTypeText = TextOf(Find("JenisProduk.TXT"));
             recommendationText = TextOf(Find("RekomendasiTXT"));
@@ -137,9 +132,6 @@ namespace ProdukLM
             CardData product = flow.State.GetCard(SlotType.ProductType);
             string defaultName = product != null ? product.displayName : "Produk Digital";
 
-            if (tierText != null)
-                tierText.text = $"HASIL PRODUK — AI {flow.CurrentTier.ToString().ToUpperInvariant()}";
-            RefreshTier(flow.CurrentTier);
             if (statusText != null)
                 statusText.text = "Status       : BERHASIL";
             if (productTypeText != null) productTypeText.text = defaultName;
@@ -318,41 +310,19 @@ namespace ProdukLM
                 : null;
         }
 
-        void ResolveTierTexts()
+        /// <summary>
+        /// Sistem AI Tier sudah dihapus. Sisa label "AI FREE/PLUS/PRO" yang
+        /// mungkin masih tertinggal di layout lama dimatikan agar tidak
+        /// menampilkan informasi yang sudah tidak berlaku.
+        /// </summary>
+        void HideLegacyTierTexts()
         {
-            TMP_Text[] candidates = GetComponentsInChildren<TMP_Text>(true)
-                .Where(text =>
-                {
-                    string descriptor = $"{text.name} {text.text}".ToUpperInvariant();
-                    return descriptor.Contains("AI FREE") || descriptor.Contains("AI PLUS") ||
-                           descriptor.Contains("AI PRO");
-                })
-                .ToArray();
-
-            freeTierText = candidates.FirstOrDefault(text =>
-                $"{text.name} {text.text}".Contains("FREE", StringComparison.OrdinalIgnoreCase))?.gameObject;
-            plusTierText = candidates.FirstOrDefault(text =>
-                $"{text.name} {text.text}".Contains("PLUS", StringComparison.OrdinalIgnoreCase))?.gameObject;
-            proTierText = candidates.FirstOrDefault(text =>
-                $"{text.name} {text.text}".Contains("PRO", StringComparison.OrdinalIgnoreCase))?.gameObject;
-            fallbackTierText = candidates.FirstOrDefault() ?? TextOf(Find("AI TIER"));
-        }
-
-        void RefreshTier(AITier tier)
-        {
-            bool hasThreeTierObjects = freeTierText != null && plusTierText != null && proTierText != null;
-            if (hasThreeTierObjects)
+            foreach (TMP_Text text in GetComponentsInChildren<TMP_Text>(true))
             {
-                freeTierText.SetActive(tier == AITier.Free);
-                plusTierText.SetActive(tier == AITier.Plus);
-                proTierText.SetActive(tier == AITier.Pro);
-                return;
-            }
-
-            if (fallbackTierText != null)
-            {
-                fallbackTierText.gameObject.SetActive(true);
-                fallbackTierText.text = $"AI {tier.ToString().ToUpperInvariant()}";
+                string descriptor = $"{text.name} {text.text}".ToUpperInvariant();
+                if (descriptor.Contains("AI FREE") || descriptor.Contains("AI PLUS") ||
+                    descriptor.Contains("AI PRO") || descriptor.Contains("AI TIER"))
+                    text.gameObject.SetActive(false);
             }
         }
 

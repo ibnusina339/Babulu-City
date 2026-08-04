@@ -7,6 +7,8 @@ using IntegratedApps;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
@@ -109,6 +111,16 @@ namespace LarisID
         TMP_Text productCountText;
         RectTransform productContent;
         readonly List<ProductRow> productRows = new();
+
+        [Header("Popup Atur Harga")]
+        [Tooltip("Besar perubahan harga setiap klik tombol Add/Reduce Price.")]
+        [SerializeField, Min(100)] int priceStep = 1000;
+
+        [Header("Diagnosa")]
+        [Tooltip("Menulis log setiap tombol jual ditekan. Matikan bila sudah tidak diperlukan.")]
+        [SerializeField] bool logSellButtonClicks = true;
+        [Tooltip("Menulis objek UI yang benar-benar menerima klik. Berguna untuk menemukan panel yang memblokir raycast.")]
+        [SerializeField] bool logRaycastBlockers = true;
 
         GameObject pricePopup;
         TMP_Text pricePopupTitle;
@@ -242,6 +254,44 @@ namespace LarisID
         {
             if (windowRoot != null)
                 windowRoot.SetActive(false);
+        }
+
+        /// <summary>
+        /// Diagnosa sementara: mencetak seluruh objek UI yang menerima klik,
+        /// diurutkan dari yang paling depan. Bila tombol jual terasa mati,
+        /// objek teratas pada log inilah yang memblokir raycast-nya.
+        /// Matikan Log Raycast Blockers di Inspector bila sudah tidak perlu.
+        /// </summary>
+        void Update()
+        {
+            if (!logRaycastBlockers || windowRoot == null || !windowRoot.activeInHierarchy)
+                return;
+            if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+                return;
+
+            if (EventSystem.current == null)
+            {
+                Debug.LogWarning("[Laris.ID] Tidak ada EventSystem aktif; UI tidak bisa diklik.", this);
+                return;
+            }
+
+            var pointer = new PointerEventData(EventSystem.current)
+            {
+                position = Mouse.current.position.ReadValue()
+            };
+            var hits = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(pointer, hits);
+
+            if (hits.Count == 0)
+            {
+                Debug.Log("[Laris.ID] Klik tidak mengenai objek UI mana pun.", this);
+                return;
+            }
+
+            Debug.Log(
+                "[Laris.ID] Penerima klik (depan ke belakang): " +
+                string.Join("  <-  ", hits.Select(hit => hit.gameObject.name)),
+                hits[0].gameObject);
         }
 
         void OnDestroy()
@@ -596,8 +646,39 @@ namespace LarisID
             windowRoot.transform.SetAsLastSibling();
             if (desktopTaskbar != null)
                 desktopTaskbar.SetAsLastSibling();
+            ValidateClickInfrastructure();
             ShowPage(currentPage);
             RefreshAll();
+        }
+
+        void ValidateClickInfrastructure()
+        {
+            EventSystem[] activeSystems = UnityEngine.Object.FindObjectsByType<EventSystem>(
+                    FindObjectsInactive.Exclude)
+                .Where(system => system.isActiveAndEnabled)
+                .ToArray();
+            if (activeSystems.Length != 1)
+                Debug.LogWarning(
+                    $"[Laris.ID] Ditemukan {activeSystems.Length} EventSystem aktif. " +
+                    "UI membutuhkan tepat satu EventSystem aktif.",
+                    this);
+
+            Canvas canvas = windowRoot != null ? windowRoot.GetComponentInParent<Canvas>(true) : null;
+            if (canvas == null)
+            {
+                Debug.LogError("[Laris.ID] Window tidak berada di bawah Canvas.", this);
+                return;
+            }
+
+            GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
+            if (raycaster == null)
+            {
+                raycaster = canvas.gameObject.AddComponent<GraphicRaycaster>();
+                Debug.LogWarning(
+                    $"[Laris.ID] GraphicRaycaster tidak ada pada Canvas '{canvas.name}' dan dipasang otomatis.",
+                    canvas);
+            }
+            raycaster.enabled = true;
         }
 
         public void CloseWindow()
@@ -696,16 +777,74 @@ namespace LarisID
             }
             row.deleteButton?.onClick.RemoveAllListeners();
             row.deleteButton?.onClick.AddListener(() => OpenDeletePopup(product));
-            row.activeButton?.onClick.RemoveAllListeners();
-            row.activeButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
-            row.inactiveButton?.onClick.RemoveAllListeners();
-            row.inactiveButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
+            // Badge Aktif/Mati adalah tombol "Jual". Variabel lokal dipakai agar
+            // closure selalu menunjuk produk baris ini, bukan produk terakhir
+            // pada perulangan RefreshProducts.
+            LarisProduct selectedProduct = product;
+            BindSellButton(row.activeButton, selectedProduct);
+            BindSellButton(row.inactiveButton, selectedProduct);
 
             if (row.priceInput != null)
             {
                 row.priceInput.onEndEdit.RemoveAllListeners();
                 row.priceInput.interactable = false;
             }
+        }
+
+        /// <summary>
+        /// Memasang ulang tombol Aktif/Mati sekaligus memastikan syarat
+        /// klik-nya terpenuhi: listener bersih, tombol interactable, dan
+        /// Graphic-nya benar-benar menerima raycast.
+        /// </summary>
+        void BindSellButton(Button button, LarisProduct product)
+        {
+            if (button == null)
+                return;
+
+            button.onClick.RemoveAllListeners();
+            // Teks/icon anak status sebelumnya ikut menerima raycast di atas
+            // root Button. Jadikan root satu-satunya penerima klik agar Scroll
+            // View tidak salah memilih Graphic dekoratif.
+            MakeButtonResponsive(button, true);
+
+            // Tanpa targetGraphic yang menerima raycast, Button tidak pernah
+            // menerima klik walaupun listener-nya terpasang.
+            if (button.targetGraphic == null && button.TryGetComponent(out Graphic own))
+                button.targetGraphic = own;
+            if (button.targetGraphic != null)
+                button.targetGraphic.raycastTarget = true;
+
+            // CanvasGroup induk yang memblokir membuat seluruh baris mati klik.
+            foreach (CanvasGroup group in button.GetComponentsInParent<CanvasGroup>(true))
+            {
+                if (group.blocksRaycasts && group.interactable && group.alpha > 0.01f)
+                    continue;
+                Debug.LogWarning(
+                    $"CanvasGroup '{group.name}' memblokir tombol jual " +
+                    $"(alpha={group.alpha}, interactable={group.interactable}, " +
+                    $"blocksRaycasts={group.blocksRaycasts}). Nilainya dipulihkan.",
+                    group);
+                group.alpha = Mathf.Max(group.alpha, 1f);
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+
+            button.onClick.AddListener(() =>
+            {
+                if (logSellButtonClicks)
+                    Debug.Log($"[Laris.ID] Tombol jual ditekan untuk '{product.productName}' " +
+                              $"(status sekarang: {product.status}).", button);
+                ProductStatus previousStatus = product.status;
+                manager.ToggleProductActive(product);
+                if (product.status == previousStatus)
+                    Debug.LogWarning(
+                        $"[Laris.ID] Status '{product.productName}' tidak berubah: {manager.LastMessage}",
+                        button);
+                else if (logSellButtonClicks)
+                    Debug.Log(
+                        $"[Laris.ID] '{product.productName}' sekarang berstatus {product.status}.",
+                        button);
+            });
         }
 
         void BindProductPopups()
@@ -720,10 +859,22 @@ namespace LarisID
             // desain dan tombol +/- terlihat tidak berfungsi walaupun nilainya
             // sebenarnya berubah.
             pricePopupValue = FindText(FindNamed(priceBox, "price bg"), "Harga", "Text (TMP)");
-            priceMinusButton = BindClick(FindNamed(priceBox, "Reduce price button"), () => ChangePendingPrice(-1000));
-            pricePlusButton = BindClick(FindNamed(priceBox, "Add price button"), () => ChangePendingPrice(1000));
+            // BindClick memanggil RemoveAllListeners lebih dulu, jadi membuka
+            // popup berkali-kali tidak menumpuk listener pada tombol yang sama.
+            priceMinusButton = BindClick(FindNamed(priceBox, "Reduce price button"), () => ChangePendingPrice(-priceStep));
+            pricePlusButton = BindClick(FindNamed(priceBox, "Add price button"), () => ChangePendingPrice(priceStep));
             priceConfirmButton = BindClick(FindNamed(priceBox, "Set Harga Button"), ConfirmPricePopup);
             priceCancelButton = BindClick(FindNamed(priceBox, "Kembali Button"), ClosePricePopup);
+
+            if (pricePopupValue == null)
+                Debug.LogWarning(
+                    "Teks nilai harga tidak ditemukan di 'Set harga Pop up' > MainBOX > 'price bg'. " +
+                    "Tombol +/- tetap bekerja tetapi angkanya tidak terlihat berubah.",
+                    this);
+            if (priceMinusButton == null || pricePlusButton == null)
+                Debug.LogWarning(
+                    "Tombol 'Add price button' / 'Reduce price button' tidak ditemukan di 'Set harga Pop up'.",
+                    this);
 
             deletePopup = FindSceneNamed("delete confirm Pop up")?.gameObject;
             Transform deleteBox = FindNamed(deletePopup?.transform, "MainBOX");
@@ -746,8 +897,13 @@ namespace LarisID
             if (product == null || pricePopup == null)
                 return;
             pricePopupProduct = product;
-            pendingPrice = product.price;
             PriceRange unlocked = LarisPricing.GetMarketBand(product, manager.Marketplace.StoreTier);
+            // Disnap ke kelipatan step supaya tombol +/- menghasilkan angka bulat.
+            int step = Mathf.Max(1, priceStep);
+            pendingPrice = Mathf.Clamp(
+                Mathf.RoundToInt(product.price / (float)step) * step,
+                unlocked.minimum,
+                unlocked.maximum);
             PriceRange recommended = LarisPricing.GetRecommendedRange(product, manager.Marketplace.StoreTier);
             SetText(pricePopupTitle, $"ATUR HARGA — {product.productName}");
             SetText(pricePopupRange, $"Rentang Harga: {Rupiah(unlocked.minimum)} – {Rupiah(unlocked.maximum)}");
@@ -760,6 +916,9 @@ namespace LarisID
         {
             if (pricePopupProduct == null)
                 return;
+
+            // Harga dijepit ke batas minimum/maksimum yang sudah terbuka untuk
+            // level toko, jadi tombol berhenti sendiri di ujung rentang.
             PriceRange unlocked = LarisPricing.GetMarketBand(pricePopupProduct, manager.Marketplace.StoreTier);
             pendingPrice = Mathf.Clamp(pendingPrice + delta, unlocked.minimum, unlocked.maximum);
             RefreshPendingPrice();
@@ -772,7 +931,9 @@ namespace LarisID
             if (pricePopupProduct != null)
                 manager.SetProductPrice(pricePopupProduct, pendingPrice);
             ClosePricePopup();
+            // Baris produk memperlihatkan harga baru sebelum popup benar-benar hilang.
             RefreshProducts();
+            RefreshPromotion();
             GameSaveManager.SaveImportant();
         }
 
@@ -1394,7 +1555,19 @@ namespace LarisID
 
         static void SetPopupActive(GameObject popup, bool active)
         {
-            if (popup != null && popup.activeSelf != active)
+            if (popup == null)
+                return;
+
+            // Popup tidak aktif memang biasanya tidak diraycast Unity, tetapi
+            // CanvasGroup eksplisit membuat state aman juga saat animator/desain
+            // hanya menyembunyikan visual tanpa menonaktifkan root.
+            foreach (CanvasGroup group in popup.GetComponentsInChildren<CanvasGroup>(true))
+            {
+                group.interactable = active;
+                group.blocksRaycasts = active;
+            }
+
+            if (popup.activeSelf != active)
                 popup.SetActive(active);
         }
 

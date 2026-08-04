@@ -41,7 +41,6 @@ namespace ProdukLM
             Unbind();
             flow = manager;
             flow.OnDailyLimitChanged += Refresh;
-            flow.OnAITierChanged += Refresh;
             flow.OnGenerationBlocked += ShowBlockedMessage;
             Refresh();
         }
@@ -51,7 +50,6 @@ namespace ProdukLM
             if (flow != null)
             {
                 flow.OnDailyLimitChanged -= Refresh;
-                flow.OnAITierChanged -= Refresh;
                 flow.OnGenerationBlocked -= ShowBlockedMessage;
             }
 

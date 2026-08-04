@@ -5,14 +5,13 @@ using LarisID;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 namespace IntegratedApps
 {
     public class IntegratedDesktopUI : MonoBehaviour
     {
-        const string UnlockedTierKey = "ProdukLM.UnlockedAITier";
-
         [Header("System")]
         public LarisIDManager larisManager;
 
@@ -30,21 +29,11 @@ namespace IntegratedApps
         [Tooltip("Drag icon desain final ke sini nanti.")]
         public Sprite larisIDIcon;
 
-        [Header("Tier AI - bisa disesuaikan di Inspector")]
-        public AITier currentTier = AITier.Free;
-        [Min(1)] public int freeDailyLimit = 5;
-        [Min(1)] public int plusDailyLimit = 8;
-        [Min(1)] public int proDailyLimit = 12;
-        [Range(0f, .8f)] public float freeQualityBoost;
-        [Range(0f, .8f)] public float plusQualityBoost = .18f;
-        [Range(0f, .8f)] public float proQualityBoost = .32f;
-        [Min(1)] public long plusUpgradePrice = 1500000;
-        [Min(1)] public long proUpgradePrice = 5000000;
-        public Button freeTierButton;
-        public Button plusTierButton;
-        public Button proTierButton;
+        [Header("Limit produksi harian")]
+        [Tooltip("Jumlah produk yang boleh dibuat setiap hari permainan.")]
+        [FormerlySerializedAs("freeDailyLimit")]
+        [Min(1)] public int dailyProductLimit = 5;
         public Button resetLimitTestButton;
-        public TMP_Text tierDescriptionText;
         public TMP_Text dailyLimitText;
 
         [Header("ProdukLM - katalog kartu")]
@@ -81,29 +70,15 @@ namespace IntegratedApps
         readonly int[] selectionIndices = new int[6];
         ProjectState generatedState;
         StatsResult generatedStats;
-        AITier generatedTier;
         string generatedIconKey;
         string generatedPrompt;
         bool hasGeneratedResult;
         bool generatedResultSaved;
-        AITier unlockedTier = AITier.Free;
 
-        public int CurrentDailyLimit => currentTier switch
-        {
-            AITier.Plus => Mathf.Max(1, plusDailyLimit),
-            AITier.Pro => Mathf.Max(1, proDailyLimit),
-            _ => Mathf.Max(1, freeDailyLimit)
-        };
+        public int CurrentDailyLimit => Mathf.Max(1, dailyProductLimit);
 
         void Start()
         {
-            unlockedTier = (AITier)Mathf.Clamp(
-                PlayerPrefs.GetInt(UnlockedTierKey, (int)AITier.Free),
-                (int)AITier.Free,
-                (int)AITier.Pro);
-            if (currentTier > unlockedTier)
-                currentTier = unlockedTier;
-
             BindButtons();
             BuildCardCatalog();
             ApplyReplaceableIcons();
@@ -120,10 +95,11 @@ namespace IntegratedApps
             openLarisIDButton.onClick.AddListener(OpenLarisID);
             closeProdukLMButton.onClick.AddListener(() => produkLMWindow.SetActive(false));
             closeLarisIDButton.onClick.AddListener(() => larisIDWindow.SetActive(false));
-            freeTierButton.onClick.AddListener(() => SelectOrPurchaseTier(AITier.Free));
-            plusTierButton.onClick.AddListener(() => SelectOrPurchaseTier(AITier.Plus));
-            proTierButton.onClick.AddListener(() => SelectOrPurchaseTier(AITier.Pro));
-            resetLimitTestButton.onClick.AddListener(ResetLimitForTesting);
+            // Tombol tier AI sudah dihapus dari desain, jadi referensinya tidak
+            // lagi dipakai. Sisanya dijaga null-safe supaya window tetap jalan
+            // walaupun ada objek yang sudah dihapus dari scene.
+            if (resetLimitTestButton != null)
+                resetLimitTestButton.onClick.AddListener(ResetLimitForTesting);
             generateButton.onClick.AddListener(GenerateProduct);
             saveToLarisButton.onClick.AddListener(SaveGeneratedProduct);
             discardResultButton.onClick.AddListener(DiscardGeneratedResult);
@@ -178,45 +154,6 @@ namespace IntegratedApps
             larisIDWindow.transform.SetAsLastSibling();
         }
 
-        void SetTier(AITier tier)
-        {
-            currentTier = tier;
-            produkStatusText.text = $"AI diubah ke {tier}. Limit mengikuti tier, penggunaan hari ini tetap dihitung.";
-            RefreshProdukLM();
-        }
-
-        void SelectOrPurchaseTier(AITier tier)
-        {
-            if (tier <= unlockedTier)
-            {
-                SetTier(tier);
-                return;
-            }
-
-            if (tier == AITier.Pro && unlockedTier < AITier.Plus)
-            {
-                produkStatusText.text =
-                    $"Buka AI Plus terlebih dahulu sebelum membeli AI Pro (Rp {proUpgradePrice:N0}).";
-                return;
-            }
-
-            long price = tier == AITier.Plus ? plusUpgradePrice : proUpgradePrice;
-            if (!larisManager.TrySpendBalance(price, $"Upgrade AI {tier}"))
-            {
-                produkStatusText.text =
-                    $"Saldo belum cukup untuk AI {tier}. Harga upgrade Rp {price:N0}.";
-                return;
-            }
-
-            unlockedTier = tier;
-            PlayerPrefs.SetInt(UnlockedTierKey, (int)unlockedTier);
-            PlayerPrefs.Save();
-            currentTier = tier;
-            produkStatusText.text =
-                $"AI {tier} berhasil dibuka permanen seharga Rp {price:N0}.";
-            RefreshProdukLM();
-        }
-
         void ResetLimitForTesting()
         {
             DailyGenerationCounter.ResetForTesting();
@@ -254,35 +191,17 @@ namespace IntegratedApps
 
             promptPreviewText.text = PromptBuilder.Build(previewState);
             int remaining = DailyGenerationCounter.Remaining(CurrentDailyLimit);
-            dailyLimitText.text = $"Sisa hari ini  {remaining}/{CurrentDailyLimit}";
-            tierDescriptionText.text = currentTier switch
-            {
-                AITier.Plus => $"PLUS  •  peningkatan kualitas {plusQualityBoost * 100f:0}% menuju nilai maksimal",
-                AITier.Pro => $"PRO  •  peningkatan kualitas {proQualityBoost * 100f:0}% menuju nilai maksimal",
-                _ => $"FREE  •  kualitas dasar  •  limit {CurrentDailyLimit} generate/hari"
-            };
-            freeTierButton.GetComponentInChildren<TMP_Text>().text = "AI FREE";
-            plusTierButton.GetComponentInChildren<TMP_Text>().text =
-                unlockedTier >= AITier.Plus
-                    ? "AI PLUS"
-                    : $"BELI AI PLUS\nRp {plusUpgradePrice:N0}";
-            proTierButton.GetComponentInChildren<TMP_Text>().text =
-                unlockedTier >= AITier.Pro
-                    ? "AI PRO"
-                    : $"BELI AI PRO\nRp {proUpgradePrice:N0}";
+            if (dailyLimitText != null)
+                dailyLimitText.text = $"Sisa hari ini  {remaining}/{CurrentDailyLimit}";
             generateButton.interactable =
                 remaining > 0 && previewState.GetNextEmptySlot() == null;
-
-            SetTierButtonVisual(freeTierButton, currentTier == AITier.Free);
-            SetTierButtonVisual(plusTierButton, currentTier == AITier.Plus);
-            SetTierButtonVisual(proTierButton, currentTier == AITier.Pro);
         }
 
         void GenerateProduct()
         {
             if (!DailyGenerationCounter.CanGenerate(CurrentDailyLimit))
             {
-                produkStatusText.text = $"Limit AI {currentTier} hari ini sudah habis.";
+                produkStatusText.text = "Limit produksi hari ini sudah habis.";
                 RefreshProdukLM();
                 return;
             }
@@ -296,11 +215,9 @@ namespace IntegratedApps
 
             DailyGenerationCounter.Consume();
             generatedState = CloneState(state);
-            generatedTier = currentTier;
             generatedPrompt = PromptBuilder.Build(generatedState);
-            generatedStats = AITierStats.ApplyBoost(
-                StatsCalculator.Calculate(generatedState),
-                CurrentQualityBoost());
+            // Kualitas hasil murni dari skor Affinity/Neutral/Conflict.
+            generatedStats = StatsCalculator.Calculate(generatedState);
             generatedIconKey = ResolveIconKey(generatedState.GetCard(SlotType.ProductType));
             hasGeneratedResult = true;
             generatedResultSaved = false;
@@ -308,7 +225,7 @@ namespace IntegratedApps
             saveMessageText.text =
                 "Generate sudah memakai 1 limit. Isi nama jika hasil ini ingin disimpan.";
             produkStatusText.text =
-                $"Produk dibuat dengan AI {currentTier}. Limit tetap terpakai meskipun hasil dibuang.";
+                "Produk berhasil dibuat. Limit tetap terpakai meskipun hasil dibuang.";
             RefreshGeneratedResult();
             RefreshProdukLM();
         }
@@ -375,7 +292,9 @@ namespace IntegratedApps
             CardData productCard = generatedState.GetCard(SlotType.ProductType);
             generatedProductTypeText.text =
                 productCard != null ? productCard.displayName : "Produk Digital";
-            generatedTierText.text = $"Dibuat dengan AI {generatedTier}";
+            // Label tier lama tetap dijaga null-safe bila objeknya sudah dihapus.
+            if (generatedTierText != null)
+                generatedTierText.gameObject.SetActive(false);
             generatedQualityText.text = $"{generatedStats.Quality}%";
             generatedRelevanceText.text = $"{generatedStats.Relevansi}%";
             generatedSellValueText.text = $"{generatedStats.NilaiJual}%";
@@ -403,25 +322,6 @@ namespace IntegratedApps
             for (int i = 0; i < 6; i++)
                 clone.SetCard((SlotType)i, source.GetCard((SlotType)i));
             return clone;
-        }
-
-        float CurrentQualityBoost()
-        {
-            return currentTier switch
-            {
-                AITier.Plus => plusQualityBoost,
-                AITier.Pro => proQualityBoost,
-                _ => freeQualityBoost
-            };
-        }
-
-        static void SetTierButtonVisual(Button button, bool selected)
-        {
-            Image image = button.targetGraphic as Image;
-            if (image != null)
-                image.color = selected
-                    ? new Color(.42f, .39f, 1f, 1f)
-                    : new Color(.14f, .17f, .27f, 1f);
         }
 
         void SetFileIcon(Image image, TMP_Text fallbackLabel, string iconKey)
