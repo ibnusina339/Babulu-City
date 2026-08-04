@@ -468,6 +468,185 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 166442056}
   m_CullTransparentMesh: 1
+--- !u!1001 &677998042
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1535474299}
+    m_Modifications:
+    - target: {fileID: 60738139132216975, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.b
+      value: 0.8000001
+      objectReference: {fileID: 0}
+    - target: {fileID: 60738139132216975, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.g
+      value: 0.8196079
+      objectReference: {fileID: 0}
+    - target: {fileID: 60738139132216975, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.r
+      value: 0.282353
+      objectReference: {fileID: 0}
+    - target: {fileID: 448369809124775051, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Name
+      value: Title
+      objectReference: {fileID: 0}
+    - target: {fileID: 1393181622601096804, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Name
+      value: Konfirm Ulang Proggres
+      objectReference: {fileID: 0}
+    - target: {fileID: 1400210448729398377, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.b
+      value: 0.8313726
+      objectReference: {fileID: 0}
+    - target: {fileID: 1400210448729398377, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.g
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 1400210448729398377, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.r
+      value: 0.4980392
+      objectReference: {fileID: 0}
+    - target: {fileID: 1550298689821452312, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_text
+      value: Mulai
+      objectReference: {fileID: 0}
+    - target: {fileID: 1923294065581666786, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.b
+      value: 0.8000001
+      objectReference: {fileID: 0}
+    - target: {fileID: 1923294065581666786, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.g
+      value: 0.8196079
+      objectReference: {fileID: 0}
+    - target: {fileID: 1923294065581666786, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Color.r
+      value: 0.282353
+      objectReference: {fileID: 0}
+    - target: {fileID: 2085487150099499729, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Name
+      value: deskripsi
+      objectReference: {fileID: 0}
+    - target: {fileID: 2712649181111916867, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_text
+      value: Progres kamu yg sudah tersimpan akan hilang dan permainan akan dimulai
+        ulang dari awal
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Pivot.x
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Pivot.y
+      value: 0.5
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchorMax.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchorMax.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchorMin.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchorMin.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_SizeDelta.x
+      value: 1920
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_SizeDelta.y
+      value: 1080
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchoredPosition.x
+      value: 960
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_AnchoredPosition.y
+      value: 540
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 7889156037307868292, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_text
+      value: Mulai Ulang?
+      objectReference: {fileID: 0}
+    - target: {fileID: 9130309417770192808, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_Name
+      value: BacktoStartScreen
+      objectReference: {fileID: 0}
+    - target: {fileID: 9130309417770192808, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+--- !u!224 &677998043 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 3964180887333268117, guid: 729d6ea561add3d41a07419cc39a2a33, type: 3}
+  m_PrefabInstance: {fileID: 677998042}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &886017338
 GameObject:
   m_ObjectHideFlags: 0
@@ -1212,6 +1391,7 @@ RectTransform:
   - {fileID: 1099257632}
   - {fileID: 1574405185}
   - {fileID: 81926331}
+  - {fileID: 677998043}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}

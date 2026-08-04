@@ -2,10 +2,12 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using BabuluCity.SaveSystem;
 using IntegratedApps;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace LarisID
@@ -108,6 +110,27 @@ namespace LarisID
         RectTransform productContent;
         readonly List<ProductRow> productRows = new();
 
+        GameObject pricePopup;
+        TMP_Text pricePopupTitle;
+        TMP_Text pricePopupRange;
+        TMP_Text pricePopupIdeal;
+        TMP_Text pricePopupValue;
+        Button priceMinusButton;
+        Button pricePlusButton;
+        Button priceConfirmButton;
+        Button priceCancelButton;
+        LarisProduct pricePopupProduct;
+        int pendingPrice;
+
+        GameObject deletePopup;
+        TMP_Text deletePopupDescription;
+        Button deleteConfirmButton;
+        Button deleteCancelButton;
+        LarisProduct deletePopupProduct;
+
+        GameObject insufficientBalancePopup;
+        Button insufficientBalanceCloseButton;
+
         TMP_Text promotionProductName;
         TMP_Text promotionProductPrice;
         Image promotionProductIcon;
@@ -199,6 +222,7 @@ namespace LarisID
             BindStaticButtons();
             BindDashboard();
             BindProducts();
+            BindProductPopups();
             BindPromotion();
             BindHistory();
             BindAnalytics();
@@ -666,9 +690,12 @@ namespace LarisID
 
             row.editButton?.onClick.RemoveAllListeners();
             if (row.editButton != null)
-                row.editButton.interactable = false;
+            {
+                row.editButton.interactable = true;
+                row.editButton.onClick.AddListener(() => OpenPricePopup(product));
+            }
             row.deleteButton?.onClick.RemoveAllListeners();
-            row.deleteButton?.onClick.AddListener(() => manager.DeleteProduct(product));
+            row.deleteButton?.onClick.AddListener(() => OpenDeletePopup(product));
             row.activeButton?.onClick.RemoveAllListeners();
             row.activeButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
             row.inactiveButton?.onClick.RemoveAllListeners();
@@ -677,15 +704,103 @@ namespace LarisID
             if (row.priceInput != null)
             {
                 row.priceInput.onEndEdit.RemoveAllListeners();
-                row.priceInput.onEndEdit.AddListener(value =>
-                {
-                    string digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
-                    if (int.TryParse(digits, out int price))
-                        manager.SetProductPrice(product, price);
-                    else
-                        RefreshProducts();
-                });
+                row.priceInput.interactable = false;
             }
+        }
+
+        void BindProductPopups()
+        {
+            pricePopup = FindSceneNamed("Set harga Pop up")?.gameObject;
+            Transform priceBox = FindNamed(pricePopup?.transform, "MainBOX");
+            pricePopupTitle = FindText(priceBox, "Title Pop Up");
+            pricePopupRange = FindText(priceBox, "Rentang Harga");
+            pricePopupIdeal = FindText(priceBox, "Rekomendasi");
+            pricePopupValue = FindText(FindNamed(priceBox, "price bg"), "Text (TMP)");
+            priceMinusButton = BindClick(FindNamed(priceBox, "Reduce price button"), () => ChangePendingPrice(-1000));
+            pricePlusButton = BindClick(FindNamed(priceBox, "Add price button"), () => ChangePendingPrice(1000));
+            priceConfirmButton = BindClick(FindNamed(priceBox, "Set Harga Button"), ConfirmPricePopup);
+            priceCancelButton = BindClick(FindNamed(priceBox, "Kembali Button"), ClosePricePopup);
+
+            deletePopup = FindSceneNamed("delete confirm Pop up")?.gameObject;
+            Transform deleteBox = FindNamed(deletePopup?.transform, "MainBOX");
+            deletePopupDescription = FindText(deleteBox, "deksripsi hapus", "deskripsi hapus");
+            deleteConfirmButton = BindClick(FindNamed(deleteBox, "Set Harga Button"), ConfirmDeletePopup);
+            deleteCancelButton = BindClick(FindNamed(deleteBox, "Kembali Button"), CloseDeletePopup);
+
+            insufficientBalancePopup = FindSceneNamed("Saldo Tidak Mencukupi")?.gameObject;
+            insufficientBalanceCloseButton = BindClick(
+                FindNamed(insufficientBalancePopup?.transform, "KembaliBOX", "Kembali Button"),
+                () => SetPopupActive(insufficientBalancePopup, false));
+
+            SetPopupActive(pricePopup, false);
+            SetPopupActive(deletePopup, false);
+            SetPopupActive(insufficientBalancePopup, false);
+        }
+
+        void OpenPricePopup(LarisProduct product)
+        {
+            if (product == null || pricePopup == null)
+                return;
+            pricePopupProduct = product;
+            pendingPrice = product.price;
+            PriceRange unlocked = LarisPricing.GetMarketBand(product, manager.Marketplace.StoreTier);
+            PriceRange recommended = LarisPricing.GetRecommendedRange(product, manager.Marketplace.StoreTier);
+            SetText(pricePopupTitle, $"ATUR HARGA — {product.productName}");
+            SetText(pricePopupRange, $"Rentang Harga: {Rupiah(unlocked.minimum)} – {Rupiah(unlocked.maximum)}");
+            SetText(pricePopupIdeal, $"Harga Ideal: {Rupiah(recommended.ideal)}");
+            RefreshPendingPrice();
+            SetPopupActive(pricePopup, true);
+        }
+
+        void ChangePendingPrice(int delta)
+        {
+            if (pricePopupProduct == null)
+                return;
+            PriceRange unlocked = LarisPricing.GetMarketBand(pricePopupProduct, manager.Marketplace.StoreTier);
+            pendingPrice = Mathf.Clamp(pendingPrice + delta, unlocked.minimum, unlocked.maximum);
+            RefreshPendingPrice();
+        }
+
+        void RefreshPendingPrice() => SetText(pricePopupValue, Rupiah(pendingPrice));
+
+        void ConfirmPricePopup()
+        {
+            if (pricePopupProduct != null)
+                manager.SetProductPrice(pricePopupProduct, pendingPrice);
+            ClosePricePopup();
+            RefreshProducts();
+            GameSaveManager.SaveImportant();
+        }
+
+        void ClosePricePopup()
+        {
+            SetPopupActive(pricePopup, false);
+            pricePopupProduct = null;
+        }
+
+        void OpenDeletePopup(LarisProduct product)
+        {
+            if (product == null || deletePopup == null)
+                return;
+            deletePopupProduct = product;
+            SetText(deletePopupDescription,
+                $"Hapus ‘{product.productName}’? Data penjualan produk ini juga akan dihapus.");
+            SetPopupActive(deletePopup, true);
+        }
+
+        void ConfirmDeletePopup()
+        {
+            if (deletePopupProduct != null)
+                manager.DeleteProduct(deletePopupProduct);
+            CloseDeletePopup();
+            RefreshAll();
+            GameSaveManager.SaveImportant();
+        }
+
+        void CloseDeletePopup()
+        {
+            SetPopupActive(deletePopup, false);
+            deletePopupProduct = null;
         }
 
         void RefreshPromotion()
@@ -802,7 +917,7 @@ namespace LarisID
             {
                 runPromotionButton.interactable =
                     product != null && selectedOffer != null &&
-                    !product.IsPromoted && manager.Marketplace.Balance >= selectedOffer.cost;
+                    !product.IsPromoted;
             }
         }
 
@@ -854,7 +969,13 @@ namespace LarisID
             LarisProduct product = CurrentPromotionProduct();
             if (product == null || selectedOffer == null)
                 return;
+            if (manager.Marketplace.Balance < selectedOffer.cost)
+            {
+                SetPopupActive(insufficientBalancePopup, true);
+                return;
+            }
             manager.PromoteProduct(product, selectedOffer);
+            GameSaveManager.SaveImportant();
         }
 
         void ChangePromotionProduct(int direction)
@@ -1249,6 +1370,26 @@ namespace LarisID
                 }
             }
             return null;
+        }
+
+        static Transform FindSceneNamed(params string[] names)
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            foreach (Transform item in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+            {
+                if (item.gameObject.scene != activeScene)
+                    continue;
+                foreach (string name in names)
+                    if (item.name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        return item;
+            }
+            return null;
+        }
+
+        static void SetPopupActive(GameObject popup, bool active)
+        {
+            if (popup != null && popup.activeSelf != active)
+                popup.SetActive(active);
         }
 
         static IEnumerable<Transform> Descendants(Transform root)

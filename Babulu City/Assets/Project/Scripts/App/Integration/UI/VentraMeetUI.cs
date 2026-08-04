@@ -1,4 +1,7 @@
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
+using BabuluCity.SaveSystem;
 using UnityEngine;
 using UnityEngine.UI;
 #if ENABLE_INPUT_SYSTEM
@@ -7,50 +10,52 @@ using UnityEngine.InputSystem;
 
 namespace IntegratedApps
 {
-    /// <summary>
-    /// Mekanik VentraMeet. Referensi dapat diganti dari Inspector ketika
-    /// desain final sudah tersedia; nama hierarchy hanya dipakai sebagai fallback.
-    /// </summary>
+    /// <summary>Mekanik jadwal dan sesi belajar VentraMeet.</summary>
     public class VentraMeetUI : MonoBehaviour
     {
         [Header("Referensi UI")]
         [SerializeField] GameObject desktopAppButton;
         [SerializeField] GameObject confirmationScreen;
+        [SerializeField] GameObject unavailableScreen;
+        [SerializeField] GameObject missedScheduleScreen;
         [SerializeField] GameObject studyScreen;
         [SerializeField] Button confirmStudyButton;
         [SerializeField] Button backButton;
         [SerializeField] Image progressFill;
+        [SerializeField] GameObject fastForwardRoot;
 
         [Header("Pengaturan Belajar")]
         [Min(1f)] [SerializeField] float studyDurationSeconds = 15f;
         [Min(0f)] [SerializeField] float consumedGameHours = 2f;
         [Min(0)] [SerializeField] int scorePerSession = 10;
 
+        readonly List<GameObject> sequentialParticipants = new();
+        readonly List<GameObject> fastForwardFrames = new();
         Coroutine studyRoutine;
         GameClockUI gameClock;
         int completedSessions;
         int studyScore;
+        int studiedDateMask;
         float appliedStudyHours;
         bool initialized;
 
         public int CompletedSessions => completedSessions;
         public int StudyScore => studyScore;
+        public int StudiedDateMask => studiedDateMask;
         public bool IsStudying => studyRoutine != null;
+        public bool HasOpenModal => gameObject.activeInHierarchy;
 
-        void Awake()
-        {
-            Initialize();
-        }
+        void Awake() => Initialize();
 
         public void Initialize()
         {
             if (initialized)
                 return;
-
             initialized = true;
             ResolveReferences();
             BindButtons();
-            ShowDesktop();
+            HideScreens();
+            gameObject.SetActive(false);
         }
 
         void Update()
@@ -72,35 +77,52 @@ namespace IntegratedApps
 
         void OnDestroy()
         {
-            UnbindButtons();
+            Button appButton = desktopAppButton != null ? desktopAppButton.GetComponent<Button>() : null;
+            appButton?.onClick.RemoveListener(OpenApp);
+            confirmStudyButton?.onClick.RemoveListener(StartStudy);
+            backButton?.onClick.RemoveListener(ShowDesktop);
         }
 
         public void OpenApp()
         {
             StopStudy(false);
             gameObject.SetActive(true);
-            confirmationScreen.SetActive(true);
-            studyScreen.SetActive(false);
+            HideScreens();
             SetProgress(0f);
+            gameClock ??= Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
+
+            if (!IsScheduledToday() || AlreadyStudiedToday())
+                SetActive(unavailableScreen, true);
+            else if (gameClock != null && gameClock.CurrentGameMinutes > 21 * 60 + 30)
+                SetActive(missedScheduleScreen, true);
+            else
+                SetActive(confirmationScreen, true);
         }
 
         public void StartStudy()
         {
-            if (studyRoutine != null || (gameClock != null && gameClock.ReachedEnd))
+            if (studyRoutine != null || gameClock == null || gameClock.ReachedEnd)
                 return;
+            if (!IsScheduledToday() || AlreadyStudiedToday() || gameClock.CurrentGameMinutes > 21 * 60 + 30)
+            {
+                OpenApp();
+                return;
+            }
 
             appliedStudyHours = 0f;
-            confirmationScreen.SetActive(false);
-            studyScreen.SetActive(true);
+            SetActive(confirmationScreen, false);
+            SetActive(studyScreen, true);
+            SetActive(fastForwardRoot, true);
+            ResetSequentialVisuals();
             SetProgress(0f);
             studyRoutine = StartCoroutine(StudyRoutine());
         }
 
         public void ShowDesktop()
         {
-            // Setelah belajar dikonfirmasi, biaya waktunya tetap dua jam.
-            // Jika pemain keluar di tengah animasi, sisa waktu langsung diterapkan.
+            // Waktu tetap dikonsumsi penuh jika sesi sudah dikonfirmasi.
             StopStudy(true);
+            HideScreens();
             gameObject.SetActive(false);
         }
 
@@ -108,7 +130,6 @@ namespace IntegratedApps
         {
             float elapsed = 0f;
             float duration = Mathf.Max(1f, studyDurationSeconds);
-
             while (elapsed < duration)
             {
                 elapsed += Time.unscaledDeltaTime;
@@ -120,9 +141,11 @@ namespace IntegratedApps
 
             SetProgress(1f);
             ApplyFastForward(1f);
-            completedSessions++;
+            completedSessions = Mathf.Min(4, completedSessions + 1);
             studyScore += scorePerSession;
+            MarkTodayStudied();
             studyRoutine = null;
+            GameSaveManager.SaveImportant();
             ShowDesktop();
         }
 
@@ -132,7 +155,6 @@ namespace IntegratedApps
             float additionalHours = targetHours - appliedStudyHours;
             if (additionalHours <= 0f)
                 return;
-
             gameClock?.AdvanceHours(additionalHours);
             appliedStudyHours = targetHours;
         }
@@ -141,10 +163,8 @@ namespace IntegratedApps
         {
             if (studyRoutine == null)
                 return;
-
             StopCoroutine(studyRoutine);
             studyRoutine = null;
-
             if (consumeRemainingTime)
                 ApplyFastForward(1f);
         }
@@ -152,53 +172,142 @@ namespace IntegratedApps
         void ResolveReferences()
         {
             Transform uiRoot = transform.root;
-            gameClock = uiRoot.GetComponent<GameClockUI>();
-            desktopAppButton ??= FindIn(uiRoot, "VentraMeet APP")?.gameObject;
+            gameClock = Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
+            desktopAppButton ??= FindIn(uiRoot, "VentraMeet APP", "VentraMeet App")?.gameObject;
             confirmationScreen ??= FindIn(transform, "KonfirmasiScreen")?.gameObject;
+            unavailableScreen ??= FindIn(transform, "Batas Bimbel")?.gameObject;
+            missedScheduleScreen ??= FindSceneObject("Jadwal terlewat");
             studyScreen ??= FindIn(transform, "Zoom")?.gameObject;
-
-            Transform confirmBox = FindIn(transform, "BelajarBOX (1)");
-            Transform returnBox = FindIn(transform, "KembaliBOX");
-            confirmStudyButton ??= EnsureButton(confirmBox);
-            backButton ??= EnsureButton(returnBox);
-
-            if (progressFill == null && studyScreen != null)
-                progressFill = CreateFallbackProgress(studyScreen.transform);
+            fastForwardRoot ??= FindIn(studyScreen?.transform, "FastForward Animation")?.gameObject;
+            confirmStudyButton ??= EnsureButton(FindIn(confirmationScreen?.transform, "Bimbel Button"));
+            backButton ??= EnsureButton(FindIn(confirmationScreen?.transform, "Kembali Button"));
+            BindCloseButton(unavailableScreen);
+            BindCloseButton(missedScheduleScreen);
+            ResolveSequentialVisuals();
         }
 
         void BindButtons()
         {
-            Button appButton = EnsureButton(desktopAppButton != null ? desktopAppButton.transform : null);
-            appButton?.onClick.AddListener(OpenApp);
-            confirmStudyButton?.onClick.AddListener(StartStudy);
-            backButton?.onClick.AddListener(ShowDesktop);
-        }
-
-        void UnbindButtons()
-        {
-            Button appButton = desktopAppButton != null ? desktopAppButton.GetComponent<Button>() : null;
-            appButton?.onClick.RemoveListener(OpenApp);
-            confirmStudyButton?.onClick.RemoveListener(StartStudy);
-            backButton?.onClick.RemoveListener(ShowDesktop);
+            Button appButton = EnsureButton(desktopAppButton?.transform);
+            if (appButton != null)
+            {
+                appButton.onClick.RemoveListener(OpenApp);
+                appButton.onClick.AddListener(OpenApp);
+            }
+            if (confirmStudyButton != null)
+            {
+                confirmStudyButton.onClick.RemoveListener(StartStudy);
+                confirmStudyButton.onClick.AddListener(StartStudy);
+            }
+            if (backButton != null)
+            {
+                backButton.onClick.RemoveListener(ShowDesktop);
+                backButton.onClick.AddListener(ShowDesktop);
+            }
         }
 
         void SetProgress(float value)
         {
+            value = Mathf.Clamp01(value);
             if (progressFill != null)
-                progressFill.fillAmount = Mathf.Clamp01(value);
+                progressFill.fillAmount = value;
+            int visibleCount = Mathf.CeilToInt(value * sequentialParticipants.Count);
+            for (int i = 0; i < sequentialParticipants.Count; i++)
+                SetActive(sequentialParticipants[i], i < visibleCount);
+            if (fastForwardFrames.Count > 0 && IsStudying)
+            {
+                int frame = Mathf.FloorToInt(Time.unscaledTime * 7f) % fastForwardFrames.Count;
+                for (int i = 0; i < fastForwardFrames.Count; i++)
+                    SetActive(fastForwardFrames[i], i == frame);
+            }
         }
 
-        static Transform FindIn(Transform root, string objectName)
+        public void RestoreProgress(int sessions, int score, int dateMask)
+        {
+            completedSessions = Mathf.Clamp(sessions, 0, 4);
+            studyScore = Mathf.Max(0, score);
+            studiedDateMask = Mathf.Max(0, dateMask);
+        }
+
+        bool IsScheduledToday()
+        {
+            if (gameClock == null)
+                return false;
+            System.DateTime date = gameClock.CurrentDate;
+            return date.Year == 2026 && date.Month == 8 &&
+                   (date.Day == 3 || date.Day == 5 || date.Day == 6 || date.Day == 8);
+        }
+
+        bool AlreadyStudiedToday()
+        {
+            if (gameClock == null)
+                return false;
+            int bit = Mathf.Clamp(gameClock.CurrentDate.Day - 2, 0, 30);
+            return (studiedDateMask & (1 << bit)) != 0;
+        }
+
+        void MarkTodayStudied()
+        {
+            int bit = Mathf.Clamp(gameClock.CurrentDate.Day - 2, 0, 30);
+            studiedDateMask |= 1 << bit;
+        }
+
+        void HideScreens()
+        {
+            SetActive(confirmationScreen, false);
+            SetActive(unavailableScreen, false);
+            SetActive(missedScheduleScreen, false);
+            SetActive(studyScreen, false);
+            SetActive(fastForwardRoot, false);
+        }
+
+        void ResolveSequentialVisuals()
+        {
+            sequentialParticipants.Clear();
+            Transform panel = FindIn(studyScreen?.transform, "Panel");
+            if (panel != null)
+                sequentialParticipants.AddRange(panel.Cast<Transform>()
+                    .Where(child => child.name.StartsWith("Peserta", System.StringComparison.OrdinalIgnoreCase))
+                    .Select(child => child.gameObject));
+            fastForwardFrames.Clear();
+            if (fastForwardRoot != null)
+                fastForwardFrames.AddRange(fastForwardRoot.transform.Cast<Transform>()
+                    .Select(child => child.gameObject));
+        }
+
+        void ResetSequentialVisuals()
+        {
+            foreach (GameObject participant in sequentialParticipants)
+                SetActive(participant, false);
+            for (int i = 0; i < fastForwardFrames.Count; i++)
+                SetActive(fastForwardFrames[i], i == 0);
+        }
+
+        void BindCloseButton(GameObject screen)
+        {
+            Button button = EnsureButton(FindIn(screen?.transform, "Kembali Button", "KembaliBOX"));
+            if (button == null)
+                return;
+            button.onClick.RemoveListener(ShowDesktop);
+            button.onClick.AddListener(ShowDesktop);
+        }
+
+        static GameObject FindSceneObject(string objectName)
+        {
+            foreach (Transform candidate in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+                if (candidate.name.Equals(objectName, System.StringComparison.OrdinalIgnoreCase))
+                    return candidate.gameObject;
+            return null;
+        }
+
+        static Transform FindIn(Transform root, params string[] names)
         {
             if (root == null)
                 return null;
-
             foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
-            {
-                if (child.name == objectName)
-                    return child;
-            }
-
+                foreach (string name in names)
+                    if (child.name.Equals(name, System.StringComparison.OrdinalIgnoreCase))
+                        return child;
             return null;
         }
 
@@ -206,43 +315,15 @@ namespace IntegratedApps
         {
             if (target == null)
                 return null;
-
-            Button button = target.GetComponent<Button>();
-            if (button == null)
-                button = target.gameObject.AddComponent<Button>();
-
-            if (button.targetGraphic == null)
-                button.targetGraphic = target.GetComponent<Graphic>();
-
+            Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
+            button.targetGraphic ??= target.GetComponent<Graphic>();
             return button;
         }
 
-        static Image CreateFallbackProgress(Transform parent)
+        static void SetActive(GameObject target, bool active)
         {
-            GameObject track = new GameObject("StudyProgress", typeof(RectTransform), typeof(Image));
-            track.transform.SetParent(parent, false);
-            RectTransform trackRect = (RectTransform)track.transform;
-            trackRect.anchorMin = new Vector2(0.2f, 0.06f);
-            trackRect.anchorMax = new Vector2(0.8f, 0.095f);
-            trackRect.offsetMin = Vector2.zero;
-            trackRect.offsetMax = Vector2.zero;
-            track.GetComponent<Image>().color = new Color(0.04f, 0.08f, 0.14f, 0.9f);
-
-            GameObject fill = new GameObject("Fill", typeof(RectTransform), typeof(Image));
-            fill.transform.SetParent(track.transform, false);
-            RectTransform fillRect = (RectTransform)fill.transform;
-            fillRect.anchorMin = Vector2.zero;
-            fillRect.anchorMax = Vector2.one;
-            fillRect.offsetMin = new Vector2(3f, 3f);
-            fillRect.offsetMax = new Vector2(-3f, -3f);
-
-            Image image = fill.GetComponent<Image>();
-            image.color = new Color(0.15f, 0.75f, 1f, 1f);
-            image.type = Image.Type.Filled;
-            image.fillMethod = Image.FillMethod.Horizontal;
-            image.fillOrigin = 0;
-            image.fillAmount = 0f;
-            return image;
+            if (target != null && target.activeSelf != active)
+                target.SetActive(active);
         }
     }
 
@@ -251,15 +332,12 @@ namespace IntegratedApps
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
         static void Install()
         {
-            foreach (Transform candidate in Object.FindObjectsByType<Transform>(
-                         FindObjectsInactive.Include))
+            foreach (Transform candidate in Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
             {
-                if (candidate.name != "VentraMeet" || candidate.GetComponent<VentraMeetUI>() != null)
+                if (!candidate.name.Equals("VentraMeet", System.StringComparison.OrdinalIgnoreCase) ||
+                    candidate.GetComponent<VentraMeetUI>() != null)
                     continue;
-
                 VentraMeetUI controller = candidate.gameObject.AddComponent<VentraMeetUI>();
-                // Awake tidak selalu langsung dipanggil jika prefab sengaja inactive.
-                // Inisialisasi eksplisit memastikan ikon desktop tetap mendapat listener.
                 controller.Initialize();
                 break;
             }

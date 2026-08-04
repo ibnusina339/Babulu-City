@@ -401,6 +401,52 @@ namespace LarisID
         public LarisProduct GetBestSeller() =>
             products.OrderByDescending(p => p.sales).FirstOrDefault();
 
+        public LarisMarketplaceSaveData CaptureSaveData()
+        {
+            return new LarisMarketplaceSaveData
+            {
+                shopName = ShopName,
+                shopDescription = ShopDescription,
+                balance = Balance,
+                followers = Followers,
+                currentDay = CurrentDay,
+                activeTrend = ActiveTrend,
+                storeTier = StoreTier,
+                nextProductId = nextProductId,
+                dummyIndex = dummyIndex,
+                products = products.ToList(),
+                dailyHistory = dailyHistory.ToList()
+            };
+        }
+
+        public void RestoreSaveData(LarisMarketplaceSaveData data)
+        {
+            if (data == null)
+                return;
+
+            ShopName = string.IsNullOrWhiteSpace(data.shopName) ? "Toko BRIDA" : data.shopName;
+            ShopDescription = data.shopDescription ?? string.Empty;
+            Balance = Math.Max(0L, data.balance);
+            Followers = Mathf.Max(0, data.followers);
+            CurrentDay = Mathf.Max(1, data.currentDay);
+            ActiveTrend = data.activeTrend;
+            StoreTier = data.storeTier;
+            nextProductId = Mathf.Max(1, data.nextProductId);
+            dummyIndex = Mathf.Max(0, data.dummyIndex);
+
+            products.Clear();
+            if (data.products != null)
+                products.AddRange(data.products.Where(product => product != null));
+            dailyHistory.Clear();
+            if (data.dailyHistory != null)
+                dailyHistory.AddRange(data.dailyHistory.Where(result => result != null));
+            LastDailyResult = dailyHistory.LastOrDefault();
+
+            // Save lama mungkin belum menyimpan counter ID.
+            if (products.Count >= nextProductId)
+                nextProductId = products.Count + 1;
+        }
+
         // Kapasitas berlaku untuk seluruh toko, bukan untuk setiap produk.
         // Progress awal sengaja pelan agar pemain tidak langsung kaya.
         public static int GetDailyStoreSalesCap(int day)

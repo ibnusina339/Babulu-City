@@ -166,4 +166,21 @@ namespace LarisID
         public int professionalism;
         public int sellValue;
     }
+
+    /// <summary>Data marketplace murni untuk save game, tanpa referensi UI.</summary>
+    [Serializable]
+    public class LarisMarketplaceSaveData
+    {
+        public string shopName;
+        public string shopDescription;
+        public long balance;
+        public int followers;
+        public int currentDay;
+        public ProductCategory activeTrend;
+        public StorePriceTier storeTier;
+        public int nextProductId;
+        public int dummyIndex;
+        public List<LarisProduct> products = new();
+        public List<DailyMarketResult> dailyHistory = new();
+    }
 }

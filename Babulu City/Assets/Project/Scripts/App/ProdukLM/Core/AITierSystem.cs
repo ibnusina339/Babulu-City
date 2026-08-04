@@ -82,6 +82,15 @@ namespace ProdukLM
             PlayerPrefs.Save();
         }
 
+        public static void RestoreCount(int count)
+        {
+            PlayerPrefs.SetString(
+                DailyDateKey,
+                DateTime.Now.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture));
+            PlayerPrefs.SetInt(DailyCountKey, Mathf.Max(0, count));
+            PlayerPrefs.Save();
+        }
+
         // Data permainan saat ini memang hanya berlaku selama sesi scene aktif.
         // Reset sekali ketika Play dimulai agar sisa pengujian sebelumnya tidak
         // dianggap sebagai pemakaian limit pada permainan baru.

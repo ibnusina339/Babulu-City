@@ -21,7 +21,7 @@ namespace IntegratedApps
         [Range(1, 24)] public int endHour = 24;
         [Tooltip("2 detik = rentang 20.00-00.00 selesai dalam 8 menit nyata.")]
         [Min(0.01f)] public float realSecondsPerGameMinute = 2f;
-        public string startDate = "30/07/2026";
+        public string startDate = "02/08/2026";
         public bool runAutomatically = true;
         public bool useUnscaledTime = true;
 
@@ -32,6 +32,9 @@ namespace IntegratedApps
 
         public bool ReachedEnd => reachedEnd;
         public int CurrentDayNumber => gameDayOffset + 1;
+        public float ElapsedRealSeconds => elapsedRealSeconds;
+        public int GameDayOffset => gameDayOffset;
+        public DateTime CurrentDate => parsedStartDate.AddDays(gameDayOffset);
         public event Action DayEnded;
         public event Action<int> NewDayStarted;
 
@@ -92,6 +95,14 @@ namespace IntegratedApps
             DailyGenerationCounter.ResetForTesting();
             RefreshDisplay();
             NewDayStarted?.Invoke(gameDayOffset + 1);
+        }
+
+        public void RestoreState(int savedDayOffset, float savedElapsedRealSeconds)
+        {
+            gameDayOffset = Mathf.Clamp(savedDayOffset, 0, 7);
+            elapsedRealSeconds = Mathf.Max(0f, savedElapsedRealSeconds);
+            reachedEnd = false;
+            RefreshDisplay();
         }
 
         /// <summary>
@@ -170,7 +181,7 @@ namespace IntegratedApps
             clock.startHour = 20;
             clock.endHour = 24;
             clock.realSecondsPerGameMinute = 2f;
-            clock.startDate = "30/07/2026";
+            clock.startDate = "02/08/2026";
             clock.runAutomatically = true;
             clock.useUnscaledTime = true;
             clock.ResetClock();

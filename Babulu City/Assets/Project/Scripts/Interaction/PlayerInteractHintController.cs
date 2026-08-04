@@ -1,11 +1,14 @@
 using System;
 using System.Collections;
 using IntegratedApps;
+using BabuluCity.SaveSystem;
 using LarisID;
 using ProdukLM;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using TMPro;
 
 /// <summary>
 /// Menampilkan teks interaksi yang sudah dibuat di canvas Interact Hint.
@@ -30,6 +33,12 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     bool canSleep;
     bool sleeping;
     CanvasGroup sleepFade;
+    GameObject sleepScreenRoot;
+    GameObject sleepConfirmPopup;
+    GameObject sleepBlackScreen;
+    TMP_Text sleepDayText;
+    Button confirmSleepButton;
+    Button cancelSleepButton;
     Vector2Int lastHintResolution;
     Rect lastSafeArea;
     Vector2 lastCanvasSize;
@@ -38,6 +47,7 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     void Awake()
     {
         ResolveReferences();
+        ResolveSleepUI();
         ConfigureHintCanvas();
         HideAll();
     }
@@ -61,16 +71,44 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         SetActive(bedHint, showBed);
 
         if (canSleep && !sleeping && Keyboard.current != null && Keyboard.current.eKey.wasPressedThisFrame)
-            StartCoroutine(SleepAndStartNextDay());
+            RequestSleep();
+    }
+
+    void RequestSleep()
+    {
+        if (sleeping)
+            return;
+        sleeping = true;
+        GetComponent<PlayerMovement>()?.StopMovement();
+        if (sleepScreenRoot != null)
+            sleepScreenRoot.SetActive(true);
+        SetActive(sleepConfirmPopup, true);
+        SetActive(sleepBlackScreen, false);
+    }
+
+    void CancelSleep()
+    {
+        SetActive(sleepConfirmPopup, false);
+        if (sleepScreenRoot != null)
+            sleepScreenRoot.SetActive(false);
+        sleeping = false;
+        GetComponent<PlayerMovement>()?.ResumeMovement();
+    }
+
+    void ConfirmSleep()
+    {
+        SetActive(sleepConfirmPopup, false);
+        StartCoroutine(SleepAndStartNextDay());
     }
 
     IEnumerator SleepAndStartNextDay()
     {
-        sleeping = true;
         PlayerMovement movement = GetComponent<PlayerMovement>();
         movement?.StopMovement();
         EnsureSleepFade();
 
+        SetActive(sleepBlackScreen, true);
+        EnsureSleepFade();
         yield return FadeSleep(0f, 1f, 0.55f);
 
         GameClockUI clock = UnityEngine.Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
@@ -92,8 +130,22 @@ public sealed class PlayerInteractHintController : MonoBehaviour
                 laris.SimulateOneDay();
         }
 
-        yield return new WaitForSecondsRealtime(0.25f);
+        if (sleepDayText != null && clock != null)
+            sleepDayText.text = $"HARI KE-{clock.CurrentDayNumber}";
+        GameSaveManager.SaveImportant();
+        yield return new WaitForSecondsRealtime(10f);
+
+        if (clock != null && clock.CurrentDate >= new DateTime(2026, 8, 9))
+        {
+            GameSaveManager.SaveImportant();
+            SceneManager.LoadScene("ENDING");
+            yield break;
+        }
+
         yield return FadeSleep(1f, 0f, 0.55f);
+        SetActive(sleepBlackScreen, false);
+        if (sleepScreenRoot != null)
+            sleepScreenRoot.SetActive(false);
         movement?.ResumeMovement();
         sleeping = false;
     }
@@ -101,6 +153,14 @@ public sealed class PlayerInteractHintController : MonoBehaviour
     void EnsureSleepFade()
     {
         if (sleepFade != null) return;
+        if (sleepBlackScreen != null)
+        {
+            sleepFade = sleepBlackScreen.GetComponent<CanvasGroup>() ??
+                        sleepBlackScreen.AddComponent<CanvasGroup>();
+            sleepFade.alpha = 0f;
+            sleepFade.blocksRaycasts = false;
+            return;
+        }
         GameObject canvasObject = new GameObject("Sleep Fade Canvas", typeof(Canvas), typeof(CanvasGroup));
         Canvas canvas = canvasObject.GetComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -156,6 +216,49 @@ public sealed class PlayerInteractHintController : MonoBehaviour
         laptopHint ??= FindTransform("Buka Laptop")?.gameObject;
         calendarHint ??= FindTransform("Lihat Kalender")?.gameObject;
         bedHint ??= FindTransform("Tidur")?.gameObject;
+    }
+
+    void ResolveSleepUI()
+    {
+        sleepScreenRoot = FindTransform("Sleep Screen")?.gameObject;
+        sleepConfirmPopup = FindChild(sleepScreenRoot?.transform, "Sleep confirm")?.gameObject;
+        sleepBlackScreen = FindChild(sleepScreenRoot?.transform, "Sleep Black Screen")?.gameObject;
+        sleepDayText = FindChild(sleepBlackScreen?.transform, "Hari ke-")?.GetComponent<TMP_Text>();
+        confirmSleepButton = EnsureButton(FindChild(sleepConfirmPopup?.transform, "Sleep Button"));
+        cancelSleepButton = EnsureButton(FindChild(sleepConfirmPopup?.transform, "Kembali Button"));
+        if (confirmSleepButton != null)
+        {
+            confirmSleepButton.onClick.RemoveListener(ConfirmSleep);
+            confirmSleepButton.onClick.AddListener(ConfirmSleep);
+        }
+        if (cancelSleepButton != null)
+        {
+            cancelSleepButton.onClick.RemoveListener(CancelSleep);
+            cancelSleepButton.onClick.AddListener(CancelSleep);
+        }
+        SetActive(sleepConfirmPopup, false);
+        SetActive(sleepBlackScreen, false);
+        if (sleepScreenRoot != null)
+            sleepScreenRoot.SetActive(false);
+    }
+
+    static Transform FindChild(Transform root, string objectName)
+    {
+        if (root == null)
+            return null;
+        foreach (Transform child in root.GetComponentsInChildren<Transform>(true))
+            if (child.name.Equals(objectName, StringComparison.OrdinalIgnoreCase))
+                return child;
+        return null;
+    }
+
+    static Button EnsureButton(Transform target)
+    {
+        if (target == null)
+            return null;
+        Button button = target.GetComponent<Button>() ?? target.gameObject.AddComponent<Button>();
+        button.targetGraphic ??= target.GetComponent<Graphic>();
+        return button;
     }
 
     void ConfigureHintCanvas()
