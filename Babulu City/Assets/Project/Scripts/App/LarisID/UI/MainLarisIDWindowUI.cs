@@ -166,9 +166,9 @@ namespace LarisID
         [Tooltip("Drag TMP Text 'keterangan' (platform dan durasi) ke slot ini.")]
         [SerializeField]
         TMP_Text promotionConfirmationPlatformDays;
-        [Tooltip("Drag Image 'IconPenayanganKelas' ke slot ini.")]
+        [Tooltip("Drag Image khusus logo/aplikasi promosi pada panel ringkasan ke slot ini. Jangan drag background/card 'IconPenayanganKelas'.")]
         [SerializeField]
-        Image promotionConfirmationPlatformIcon;
+        Image promotionConfirmationAppIcon;
         [Tooltip("Drag TMP Text 'NilaiBiaya' ke slot ini.")]
         [SerializeField]
         TMP_Text promotionConfirmationCost;
@@ -499,7 +499,8 @@ namespace LarisID
                 confirmationPromoter, "Nama Tempat Promosi", "data.TXT");
             promotionConfirmationPlatformDays ??= FindText(
                 confirmationPromoter, "keterangan", "Ket.TXT");
-            promotionConfirmationPlatformIcon ??= confirmationPromoter?.GetComponent<Image>();
+            // Icon aplikasi harus dihubungkan manual dari Inspector agar sprite
+            // tidak menimpa background kartu IconPenayanganKelas.
             promotionConfirmationCost ??= FindText(
                 FindNamed(confirmation, "IconDuit"), "NilaiBiaya", "data.TXT (1)");
             promotionConfirmationBoost ??= FindText(
@@ -1064,15 +1065,15 @@ namespace LarisID
                 selectedOffer != null
                     ? $"{PromotionPlatformLabel(selectedOffer.platform)} • {selectedOffer.durationDays} Hari"
                     : string.Empty);
-            if (promotionConfirmationPlatformIcon != null)
+            if (promotionConfirmationAppIcon != null)
             {
-                promotionConfirmationPlatformIcon.sprite = selectedOffer != null
+                promotionConfirmationAppIcon.sprite = selectedOffer != null
                     ? ResolvePromotionPlatformIcon(selectedOffer.platform, null)
                     : null;
-                promotionConfirmationPlatformIcon.preserveAspect = true;
-                promotionConfirmationPlatformIcon.color = Color.white;
-                promotionConfirmationPlatformIcon.enabled =
-                    promotionConfirmationPlatformIcon.sprite != null;
+                promotionConfirmationAppIcon.preserveAspect = true;
+                promotionConfirmationAppIcon.color = Color.white;
+                promotionConfirmationAppIcon.enabled =
+                    promotionConfirmationAppIcon.sprite != null;
             }
             SetText(promotionConfirmationCost,
                 selectedOffer != null ? Rupiah(selectedOffer.cost) : string.Empty);
@@ -1288,7 +1289,10 @@ namespace LarisID
 
         PromotionRow CreatePromotionRow(GameObject root)
         {
-            Image platformIcon = FindNamed(root.transform, "icon")?.GetComponent<Image>();
+            // Setiap kartu, termasuk hasil clone runtime, mencari child Image icon
+            // miliknya sendiri. Sprite yang dipasang memakai resolver yang sama
+            // dengan icon pada panel ringkasan promosi.
+            Image platformIcon = FindPromotionCardIcon(root.transform);
             Image selectionGraphic = root.GetComponent<Image>();
             Button cardButton = BindClick(root.transform, null);
             MakeButtonResponsive(cardButton, true);
@@ -1304,6 +1308,40 @@ namespace LarisID
                 platformIcon = platformIcon,
                 defaultPlatformIcon = platformIcon != null ? platformIcon.sprite : null
             };
+        }
+
+        static Image FindPromotionCardIcon(Transform cardRoot)
+        {
+            if (cardRoot == null)
+                return null;
+
+            // Struktur prefab:
+            // PanelPilihanPromosi/PanelPilihanPromosi/framePromosi/APK
+            // Hanya Image bernama APK yang boleh diganti. Jangan memakai fallback
+            // ke Image lain karena dapat menimpa background framePromosi.
+            Transform apk = Descendants(cardRoot)
+                .FirstOrDefault(item =>
+                    item.name.Equals("APK", StringComparison.OrdinalIgnoreCase));
+
+            if (apk == null)
+            {
+                Debug.LogWarning(
+                    $"[Laris.ID] Child 'APK' tidak ditemukan pada kartu promotor '{cardRoot.name}'. " +
+                    "Pastikan setiap template kartu memiliki framePromosi/APK.",
+                    cardRoot);
+                return null;
+            }
+
+            Image apkImage = apk.GetComponent<Image>();
+            if (apkImage == null)
+            {
+                Debug.LogWarning(
+                    $"[Laris.ID] GameObject '{apk.name}' pada kartu '{cardRoot.name}' tidak memiliki komponen Image.",
+                    apk);
+                return null;
+            }
+
+            return apkImage;
         }
 
         HistoryRow CreateHistoryRow(GameObject root)
