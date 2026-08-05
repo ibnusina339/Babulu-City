@@ -1,0 +1,5 @@
+# Unity marks Burst debug symbols as not-for-distribution
+FinalBuild/*_BurstDebugInformation_DoNotShip/
+
+# Packaged release archives (attached to GitHub Releases instead)
+/dist/
