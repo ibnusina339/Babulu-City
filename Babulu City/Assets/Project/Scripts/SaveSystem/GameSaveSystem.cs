@@ -23,7 +23,6 @@ namespace BabuluCity.SaveSystem
         public int studyScore;
         public int studiedDateMask;
         public int dailyGenerationCount;
-        public int aiTier;
         public float playerX;
         public float playerY;
         public LarisMarketplaceSaveData marketplace;
@@ -79,7 +78,16 @@ namespace BabuluCity.SaveSystem
 
             if (Keyboard.current == null || !Keyboard.current.escapeKey.wasPressedThisFrame)
                 return;
-            if (IsEditingText() || IsLaptopOpen() || AnyBlockingPopupOpen())
+            if (IsEditingText())
+                return;
+
+            // Prioritas ESC: tutup popup terdepan, lalu aplikasi/kalender yang
+            // sedang terbuka. Popup keluar game hanya muncul bila tumpukan kosong.
+            if (EscapeStack.TryCloseTopmost())
+                return;
+
+            // Pengaman bila ada UI lama yang belum mendaftar ke EscapeStack.
+            if (IsLaptopOpen() || AnyBlockingPopupOpen())
                 return;
 
             ShowBackPopup();
@@ -122,7 +130,6 @@ namespace BabuluCity.SaveSystem
                 studyScore = ventra != null ? ventra.StudyScore : 0,
                 studiedDateMask = ventra != null ? ventra.StudiedDateMask : 0,
                 dailyGenerationCount = DailyGenerationCounter.Count,
-                aiTier = flow != null ? (int)flow.CurrentTier : 0,
                 playerX = player != null ? player.transform.position.x : 0f,
                 playerY = player != null ? player.transform.position.y : 0f,
                 marketplace = laris?.Marketplace?.CaptureSaveData()
@@ -170,10 +177,22 @@ namespace BabuluCity.SaveSystem
                 data.studiedDateMask);
             if (player != null)
                 player.transform.position = new Vector3(data.playerX, data.playerY, player.transform.position.z);
-            if (ProjectFlowManager.Instance != null)
-                ProjectFlowManager.Instance.SetAITier((AITier)Mathf.Clamp(data.aiTier, 0, 2));
             DailyGenerationCounter.RestoreCount(data.dailyGenerationCount);
+
+            // Kalender harus ikut tanggal hasil load, bukan tanggal awal.
+            foreach (CalendarDayMarksUI marks in
+                     FindObjectsByType<CalendarDayMarksUI>(FindObjectsInactive.Include))
+                marks.Refresh();
+
             restoring = false;
+
+            // Save pada tanggal terakhir hanya boleh membuka ringkasan ending,
+            // bukan mengembalikan pemain ke gameplay tanggal 9.
+            if (clock != null && clock.CurrentDate >= GameClockUI.FinalDate)
+            {
+                SaveNow();
+                SceneManager.LoadScene("ENDING");
+            }
         }
 
         public static void RequestContinue()
@@ -227,12 +246,24 @@ namespace BabuluCity.SaveSystem
         {
             if (backPopup == null)
                 ResolveBackPopup();
-            backPopup?.SetActive(true);
+            if (backPopup == null)
+            {
+                Debug.LogWarning(
+                    "Popup keluar game 'BacktoStartScreen' tidak ditemukan di scene Main.",
+                    this);
+                return;
+            }
+
+            backPopup.SetActive(true);
             FindAnyObjectByType<PlayerMovement>()?.StopMovement();
+            // ESC berikutnya menutup popup ini, bukan membuka popup kedua.
+            EscapeStack.Register(backPopup, EscapeLayer.Popup, HideBackPopup);
         }
 
         void HideBackPopup()
         {
+            if (backPopup != null)
+                EscapeStack.Unregister(backPopup);
             backPopup?.SetActive(false);
             FindAnyObjectByType<PlayerMovement>()?.ResumeMovement();
         }
@@ -245,7 +276,12 @@ namespace BabuluCity.SaveSystem
 
         bool AnyBlockingPopupOpen()
         {
+            if (EscapeStack.HasOpenLayer)
+                return true;
             if (backPopup != null && backPopup.activeInHierarchy)
+                return true;
+            Transform calendar = FindSceneTransform("Kalender Screen");
+            if (calendar != null && calendar.gameObject.activeInHierarchy)
                 return true;
             VentraMeetUI ventra = FindAnyObjectByType<VentraMeetUI>(FindObjectsInactive.Include);
             return ventra != null && ventra.HasOpenModal;
