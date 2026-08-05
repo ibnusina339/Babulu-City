@@ -6,8 +6,15 @@ namespace ProdukLM
 {
     public static class StatsCalculator
     {
-        const int AffinityScore = 10;
-        const int ConflictScore = -10;
+        // Kalibrasi skor hubungan antar slot. Nilai default dapat diubah dari
+        // Inspector lewat ProjectFlowManager tanpa menyentuh script ini.
+        public const int DefaultAffinityScore = 20;
+        public const int DefaultNeutralScore = 5;
+        public const int DefaultConflictScore = -15;
+
+        public static int AffinityScore { get; set; } = DefaultAffinityScore;
+        public static int NeutralScore { get; set; } = DefaultNeutralScore;
+        public static int ConflictScore { get; set; } = DefaultConflictScore;
 
         // Relevansi berfokus pada rantai keputusan utama Prompt Builder.
         // Quality tetap memeriksa seluruh pasangan kartu (cross connection).
@@ -34,10 +41,12 @@ namespace ProdukLM
                 return default;
 
             float qualityRaw = 0;
-            float qualityMax = 0;
+            int qualityPairs = 0;
             float relevanceRaw = 0;
-            float relevanceMax = 0;
+            int relevancePairs = 0;
 
+            // j selalu mulai dari i + 1, jadi setiap pasangan kartu hanya
+            // diperiksa satu kali dan skornya tidak pernah ditambahkan dobel.
             for (int i = 0; i < filled.Length; i++)
             {
                 for (int j = i + 1; j < filled.Length; j++)
@@ -50,21 +59,23 @@ namespace ProdukLM
                     bool hasConflict = Contains(a.card.conflictCards, b.card) ||
                                        Contains(b.card.conflictCards, a.card);
                     // Conflict diprioritaskan jika data dua kartu tidak sengaja memuat kedua relasi.
-                    int pairScore = hasConflict ? ConflictScore : hasAffinity ? AffinityScore : 0;
+                    int pairScore = hasConflict ? ConflictScore
+                        : hasAffinity ? AffinityScore
+                        : NeutralScore;
 
                     qualityRaw += pairScore;
-                    qualityMax += AffinityScore;
+                    qualityPairs++;
 
                     if (RelevancePairs.Contains(Key(a.slot, b.slot)))
                     {
                         relevanceRaw += pairScore;
-                        relevanceMax += AffinityScore;
+                        relevancePairs++;
                     }
                 }
             }
 
-            int quality = Normalize(qualityRaw, qualityMax);
-            int relevansi = Normalize(relevanceRaw, relevanceMax);
+            int quality = Normalize(qualityRaw, qualityPairs);
+            int relevansi = Normalize(relevanceRaw, relevancePairs);
 
             // Nilai Jual memakai kualitas keseluruhan dan kekuatan rantai prompt utama.
             int nilaiJual = Mathf.RoundToInt(
@@ -79,12 +90,19 @@ namespace ProdukLM
             };
         }
 
-        // Raw score bisa negatif (banyak conflict), jadi di-mapping ke rentang 0-100
-        // dengan asumsi rentang teoretis dari -max sampai +max.
-        static int Normalize(float raw, float max)
+        // Skor mentah berada di antara semua-conflict dan semua-affinity, dan
+        // rentangnya tidak simetris (-15 vs +20). Pemetaan memakai batas nyata
+        // kedua ujung itu supaya kombinasi netral tidak ikut bergeser saat
+        // nilai kalibrasi diubah.
+        static int Normalize(float raw, int pairCount)
         {
-            if (max <= 0) return 50; // nggak ada pasangan relevan sama sekali -> netral
-            float normalized = (raw / max + 1f) / 2f * 100f;
+            if (pairCount <= 0) return 50; // nggak ada pasangan relevan sama sekali -> netral
+
+            float worst = ConflictScore * pairCount;
+            float best = AffinityScore * pairCount;
+            if (best - worst <= Mathf.Epsilon) return 50;
+
+            float normalized = (raw - worst) / (best - worst) * 100f;
             return Mathf.Clamp(Mathf.RoundToInt(normalized), 0, 100);
         }
 

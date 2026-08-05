@@ -223,15 +223,6 @@ namespace IntegratedAppsEditor
             else
             {
                 IntegratedDesktopUI ui = desktop.GetComponent<IntegratedDesktopUI>();
-                if (ui != null &&
-                    ui.plusUpgradePrice == 350000 &&
-                    ui.proUpgradePrice == 1250000)
-                {
-                    ui.plusUpgradePrice = 1500000;
-                    ui.proUpgradePrice = 5000000;
-                    EditorUtility.SetDirty(ui);
-                    changed = true;
-                }
                 Transform prefabHost = desktop.transform.Find(
                     "LarisID_Window/WindowContent/LarisIDFullUIPrefabHost");
                 if (ui != null && larisPrefab != null && prefabHost == null)
@@ -368,18 +359,11 @@ namespace IntegratedAppsEditor
                 out Button close);
             ui.closeProdukLMButton = close;
 
-            RectTransform aiPanel = PanelObject("AITierPanel", content, Panel, V(.025f, .80f), V(.975f, .965f));
-            TextObject("Title", aiPanel, "MODEL AI", 11, Muted, FontStyles.Bold,
-                TextAlignmentOptions.Left, V(.025f, .70f), V(.14f, .93f));
-            ui.freeTierButton = ButtonObject("FreeTierButton", aiPanel, "AI FREE", Accent,
-                V(.02f, .17f), V(.14f, .66f));
-            ui.plusTierButton = ButtonObject("PlusTierButton", aiPanel, "AI PLUS", PanelSoft,
-                V(.15f, .17f), V(.27f, .66f));
-            ui.proTierButton = ButtonObject("ProTierButton", aiPanel, "AI PRO", PanelSoft,
-                V(.28f, .17f), V(.40f, .66f));
-            ui.tierDescriptionText = TextObject("TierDescription", aiPanel,
-                "FREE • kualitas dasar", 12, Text, FontStyles.Normal,
-                TextAlignmentOptions.Left, V(.43f, .42f), V(.73f, .82f));
+            // Panel tier AI sudah dihapus dari permainan; panel ini kini hanya
+            // menampung info limit harian dan tombol reset untuk testing.
+            RectTransform aiPanel = PanelObject("DailyLimitPanel", content, Panel, V(.025f, .80f), V(.975f, .965f));
+            TextObject("Title", aiPanel, "PRODUKSI HARIAN", 11, Muted, FontStyles.Bold,
+                TextAlignmentOptions.Left, V(.025f, .70f), V(.20f, .93f));
             ui.dailyLimitText = TextObject("DailyLimit", aiPanel, "Sisa hari ini 5/5", 17, Cyan,
                 FontStyles.Bold, TextAlignmentOptions.Center, V(.73f, .18f), V(.88f, .82f));
             ui.resetLimitTestButton = ButtonObject("ResetLimitTestButton", aiPanel, "RESET LIMIT (TEST)",

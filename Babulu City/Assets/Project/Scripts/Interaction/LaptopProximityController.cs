@@ -57,11 +57,12 @@ public sealed class LaptopProximityController : MonoBehaviour
         // membuka atau menutup laptop.
         bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame &&
                                !EndingShortcut.ShortcutModifiersHeld;
-        bool escapePressed = Keyboard.current.escapeKey.wasPressedThisFrame;
 
         if (laptopOpened)
         {
-            if (interactPressed || escapePressed)
+            // ESC ditangani EscapeStack agar popup/aplikasi di dalam desktop
+            // tertutup lebih dulu sebelum laptopnya sendiri.
+            if (interactPressed)
                 StartCoroutine(SetLaptopOpen(false));
 
             return;
@@ -164,6 +165,11 @@ public sealed class LaptopProximityController : MonoBehaviour
             desktopRoot.SetActive(open);
 
         laptopOpened = open;
+        if (open)
+            EscapeStack.Register(this, EscapeLayer.Screen, CloseLaptopFromEscape);
+        else
+            EscapeStack.Unregister(this);
+
         yield return null;
         yield return Fade(1f, 0f);
 
@@ -171,6 +177,18 @@ public sealed class LaptopProximityController : MonoBehaviour
             playerMovement?.ResumeMovement();
 
         transitioning = false;
+    }
+
+    void CloseLaptopFromEscape()
+    {
+        if (!laptopOpened || transitioning)
+            return;
+        StartCoroutine(SetLaptopOpen(false));
+    }
+
+    void OnDisable()
+    {
+        EscapeStack.Unregister(this);
     }
 
     IEnumerator Fade(float from, float to)
