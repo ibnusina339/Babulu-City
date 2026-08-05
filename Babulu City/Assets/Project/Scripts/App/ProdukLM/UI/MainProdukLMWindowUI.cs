@@ -1,4 +1,5 @@
 using System;
+using BabuluCity.Tutorial;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -130,6 +131,11 @@ namespace ProdukLM
 
         public void OpenWindow()
         {
+            // Tutorial hari pertama menahan pemain agar tidak pindah aplikasi
+            // sebelum tugas pada langkah yang sedang berjalan selesai.
+            if (TutorialGuard.Blocks(TutorialAction.OpenProdukLM))
+                return;
+
             if (windowRoot == null)
                 return;
 
@@ -146,6 +152,9 @@ namespace ProdukLM
 
         public void CloseWindow()
         {
+            if (TutorialGuard.Blocks(TutorialAction.CloseProdukLM))
+                return;
+
             if (flowManager != null && flowManager.gameObject.activeInHierarchy)
                 flowManager.BackToStart();
 

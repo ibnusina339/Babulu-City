@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using BabuluCity.SaveSystem;
+using BabuluCity.Tutorial;
 using IntegratedApps;
 using ProdukLM;
 using TMPro;
@@ -641,6 +642,10 @@ namespace LarisID
         {
             if (!isBound)
                 return;
+            // Tutorial hari pertama menahan pemain agar tidak pindah aplikasi
+            // sebelum tugas pada langkah yang sedang berjalan selesai.
+            if (TutorialGuard.Blocks(TutorialAction.OpenLarisID))
+                return;
             if (produkLMWindow != null)
                 produkLMWindow.SetActive(false);
             windowRoot.SetActive(true);
@@ -684,6 +689,9 @@ namespace LarisID
 
         public void CloseWindow()
         {
+            if (TutorialGuard.Blocks(TutorialAction.CloseLarisID))
+                return;
+
             if (windowRoot != null)
                 windowRoot.SetActive(false);
         }

@@ -1,5 +1,6 @@
 using System.Collections;
 using BabuluCity.Core;
+using BabuluCity.Tutorial;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -61,8 +62,9 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (laptopOpened)
         {
             // ESC ditangani EscapeStack agar popup/aplikasi di dalam desktop
-            // tertutup lebih dulu sebelum laptopnya sendiri.
-            if (interactPressed)
+            // tertutup lebih dulu sebelum laptopnya sendiri. Tutorial hari
+            // pertama boleh menahan pemain sampai tugasnya selesai.
+            if (interactPressed && !TutorialGuard.Blocks(TutorialAction.CloseLaptop))
                 StartCoroutine(SetLaptopOpen(false));
 
             return;
@@ -183,6 +185,16 @@ public sealed class LaptopProximityController : MonoBehaviour
     {
         if (!laptopOpened || transitioning)
             return;
+
+        if (TutorialGuard.Blocks(TutorialAction.CloseLaptop))
+        {
+            // EscapeStack melepas entri ini sebelum memanggil callback. Karena
+            // laptop tidak jadi ditutup, entrinya didaftarkan ulang supaya ESC
+            // berikutnya tidak langsung memunculkan popup keluar game.
+            EscapeStack.Register(this, EscapeLayer.Screen, CloseLaptopFromEscape);
+            return;
+        }
+
         StartCoroutine(SetLaptopOpen(false));
     }
 
