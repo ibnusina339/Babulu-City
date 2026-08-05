@@ -1,3 +1,4 @@
+using BabuluCity.Core;
 using UnityEngine;
 using UnityEngine.UI;
 using TMPro;
@@ -88,6 +89,8 @@ namespace ProdukLM
     static class ResetPromptButtonBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             Transform page2 = null;

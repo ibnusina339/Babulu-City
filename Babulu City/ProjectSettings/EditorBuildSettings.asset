@@ -13,10 +13,16 @@ EditorBuildSettings:
     guid: 86bd56c562179244aa428aa74ccd2169
   - enabled: 1
     path: Assets/Project/Scenes/LarisID_Test.unity
-    guid: d36b1c9578b85f3db898ef1232c3a403
+    guid: 061abc577767ff74393a8481bca46cd5
   - enabled: 1
     path: Assets/Project/Scenes/ProdukLM_LarisID_Test.unity
     guid: 7039e2b6c50aeb949bb297d5bea1fbca
+  - enabled: 1
+    path: Assets/Project/Scenes/Credits.unity
+    guid: f0e3b48e3929c4848b3ea6073c89c0e1
+  - enabled: 1
+    path: Assets/Project/Scenes/ENDING.unity
+    guid: 9d23fd3e1e899d74fa6a21f42cd19995
   m_configObjects:
     com.unity.input.settings: {fileID: 11400000, guid: 00162928e3d61d14e92f1ff33aa99fa8, type: 2}
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 2a41365559638e3468183f0f56b91d5e, type: 3}

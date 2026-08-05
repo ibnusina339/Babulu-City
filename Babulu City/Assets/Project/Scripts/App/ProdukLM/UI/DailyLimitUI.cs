@@ -1,3 +1,4 @@
+using BabuluCity.Core;
 using TMPro;
 using UnityEngine;
 
@@ -40,7 +41,6 @@ namespace ProdukLM
             Unbind();
             flow = manager;
             flow.OnDailyLimitChanged += Refresh;
-            flow.OnAITierChanged += Refresh;
             flow.OnGenerationBlocked += ShowBlockedMessage;
             Refresh();
         }
@@ -50,7 +50,6 @@ namespace ProdukLM
             if (flow != null)
             {
                 flow.OnDailyLimitChanged -= Refresh;
-                flow.OnAITierChanged -= Refresh;
                 flow.OnGenerationBlocked -= ShowBlockedMessage;
             }
 
@@ -74,6 +73,8 @@ namespace ProdukLM
     static class DailyLimitUIBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(Install);
+
         static void Install()
         {
             foreach (TMP_Text text in Object.FindObjectsByType<TMP_Text>(FindObjectsInactive.Include))

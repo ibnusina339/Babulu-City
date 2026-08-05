@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using BabuluCity.Core;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
@@ -12,6 +13,12 @@ namespace IntegratedApps
     /// </summary>
     public class GameClockUI : MonoBehaviour
     {
+        /// <summary>Tanggal mulai permainan. 1 Agustus dihitung sebagai Hari ke-1.</summary>
+        public const string DefaultStartDate = "01/08/2026";
+
+        /// <summary>Permainan berakhir begitu tanggal ini tercapai.</summary>
+        public static readonly DateTime FinalDate = new DateTime(2026, 8, 9);
+
         [Header("Referensi UI")]
         public TMP_Text[] clockTexts;
         public TMP_Text[] dateTexts;
@@ -21,7 +28,7 @@ namespace IntegratedApps
         [Range(1, 24)] public int endHour = 24;
         [Tooltip("2 detik = rentang 20.00-00.00 selesai dalam 8 menit nyata.")]
         [Min(0.01f)] public float realSecondsPerGameMinute = 2f;
-        public string startDate = "30/07/2026";
+        public string startDate = DefaultStartDate;
         public bool runAutomatically = true;
         public bool useUnscaledTime = true;
 
@@ -32,6 +39,9 @@ namespace IntegratedApps
 
         public bool ReachedEnd => reachedEnd;
         public int CurrentDayNumber => gameDayOffset + 1;
+        public float ElapsedRealSeconds => elapsedRealSeconds;
+        public int GameDayOffset => gameDayOffset;
+        public DateTime CurrentDate => parsedStartDate.AddDays(gameDayOffset);
         public event Action DayEnded;
         public event Action<int> NewDayStarted;
 
@@ -68,14 +78,27 @@ namespace IntegratedApps
             reachedEnd = false;
             gameDayOffset = 0;
 
+            // Scene lama menyimpan tanggal mulai 02/08 atau 30/07. Permainan
+            // sekarang selalu dimulai 1 Agustus, jadi nilai lama yang sudah
+            // terserialisasi dimigrasikan otomatis tanpa perlu edit manual.
+            if (startDate == "02/08/2026" || startDate == "30/07/2026")
+                startDate = DefaultStartDate;
+
+            // Beberapa scene lama menyimpan tanggal tanpa nol di depan
+            // ("1/08/2026"). Terima kedua format supaya nilainya tidak jatuh
+            // ke tanggal fallback yang salah.
             if (!DateTime.TryParseExact(
                     startDate,
-                    "dd/MM/yyyy",
+                    new[] { "dd/MM/yyyy", "d/MM/yyyy" },
                     CultureInfo.InvariantCulture,
                     DateTimeStyles.None,
                     out parsedStartDate))
             {
-                parsedStartDate = new DateTime(2026, 7, 30);
+                parsedStartDate = DateTime.ParseExact(
+                    DefaultStartDate,
+                    "dd/MM/yyyy",
+                    CultureInfo.InvariantCulture);
+                startDate = DefaultStartDate;
             }
 
             RefreshDisplay();
@@ -83,6 +106,11 @@ namespace IntegratedApps
 
         public void BeginNextDay()
         {
+            // 9 Agustus adalah batas keras. Panggilan berulang dari tombol,
+            // event jam, atau coroutine tidur tidak boleh maju ke 10 Agustus.
+            if (CurrentDate >= FinalDate)
+                return;
+
             gameDayOffset++;
             elapsedRealSeconds = 0f;
             reachedEnd = false;
@@ -92,6 +120,15 @@ namespace IntegratedApps
             DailyGenerationCounter.ResetForTesting();
             RefreshDisplay();
             NewDayStarted?.Invoke(gameDayOffset + 1);
+        }
+
+        public void RestoreState(int savedDayOffset, float savedElapsedRealSeconds)
+        {
+            // 1 Agustus = offset 0 (Hari ke-1) sampai 9 Agustus = offset 8.
+            gameDayOffset = Mathf.Clamp(savedDayOffset, 0, 8);
+            elapsedRealSeconds = Mathf.Max(0f, savedElapsedRealSeconds);
+            reachedEnd = false;
+            RefreshDisplay();
         }
 
         /// <summary>
@@ -152,6 +189,8 @@ namespace IntegratedApps
     static class GameClockBootstrap
     {
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
+        static void Bootstrap() => SceneBootstrap.RunOnEverySceneLoad(RestoreClockIfMissing);
+
         static void RestoreClockIfMissing()
         {
             GameClockUI existing = UnityEngine.Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
@@ -170,7 +209,7 @@ namespace IntegratedApps
             clock.startHour = 20;
             clock.endHour = 24;
             clock.realSecondsPerGameMinute = 2f;
-            clock.startDate = "30/07/2026";
+            clock.startDate = GameClockUI.DefaultStartDate;
             clock.runAutomatically = true;
             clock.useUnscaledTime = true;
             clock.ResetClock();

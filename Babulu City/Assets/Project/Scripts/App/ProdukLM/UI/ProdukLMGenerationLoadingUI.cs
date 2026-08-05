@@ -3,16 +3,16 @@ using System.Collections;
 using System.Linq;
 using IntegratedApps;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace ProdukLM
 {
     [DisallowMultipleComponent]
     public sealed class ProdukLMGenerationLoadingUI : MonoBehaviour
     {
-        [Header("Durasi nyata per tier")]
-        [Min(0.1f)] public float freeDurationSeconds = 15f;
-        [Min(0.1f)] public float plusDurationSeconds = 10f;
-        [Min(0.1f)] public float proDurationSeconds = 6f;
+        [Header("Durasi nyata proses generate")]
+        [FormerlySerializedAs("freeDurationSeconds")]
+        [Min(0.1f)] public float generationDurationSeconds = 15f;
 
         [Header("Waktu game")]
         [Min(0f)] public float consumedGameMinutes = 10f;
@@ -72,7 +72,7 @@ namespace ProdukLM
         IEnumerator GenerateRoutine()
         {
             float elapsed = 0f;
-            float duration = DurationFor(flow.CurrentTier);
+            float duration = Mathf.Max(0.1f, generationDurationSeconds);
 
             while (elapsed < duration)
             {
@@ -93,16 +93,6 @@ namespace ProdukLM
 
             RestoreClockPlayback();
             gameObject.SetActive(false);
-        }
-
-        float DurationFor(AITier tier)
-        {
-            return tier switch
-            {
-                AITier.Plus => Mathf.Max(0.1f, plusDurationSeconds),
-                AITier.Pro => Mathf.Max(0.1f, proDurationSeconds),
-                _ => Mathf.Max(0.1f, freeDurationSeconds)
-            };
         }
 
         void ApplyGameTime(float progress)

@@ -104,9 +104,11 @@ namespace ProdukLM
             if (existingMessage != null && existingButton != null)
             {
                 savedMessage = existingMessage.gameObject;
-                backToStartButton = existingButton.GetComponent<Button>() ??
-                                    existingButton.gameObject.AddComponent<Button>();
-                backToStartButton.targetGraphic ??= existingButton.GetComponent<Graphic>();
+                if (!existingButton.TryGetComponent(out backToStartButton))
+                    backToStartButton = existingButton.gameObject.AddComponent<Button>();
+                if (backToStartButton.targetGraphic == null &&
+                    existingButton.TryGetComponent(out Graphic buttonGraphic))
+                    backToStartButton.targetGraphic = buttonGraphic;
                 backToStartButton.onClick.RemoveListener(BackToStart);
                 backToStartButton.onClick.AddListener(BackToStart);
                 return;

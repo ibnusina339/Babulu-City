@@ -143,9 +143,7 @@ namespace IntegratedApps.Editor
 
             ProdukLMGenerationLoadingUI controller =
                 GetOrAdd<ProdukLMGenerationLoadingUI>(loading.gameObject);
-            controller.freeDurationSeconds = 15f;
-            controller.plusDurationSeconds = 10f;
-            controller.proDurationSeconds = 6f;
+            controller.generationDurationSeconds = 15f;
             controller.consumedGameMinutes = 10f;
             loading.gameObject.SetActive(false);
 
@@ -480,7 +478,7 @@ namespace IntegratedApps.Editor
             clock.startHour = 20;
             clock.endHour = 24;
             clock.realSecondsPerGameMinute = 2f;
-            clock.startDate = "30/07/2026";
+            clock.startDate = GameClockUI.DefaultStartDate;
             clock.runAutomatically = true;
             clock.useUnscaledTime = true;
             EditorUtility.SetDirty(clock);

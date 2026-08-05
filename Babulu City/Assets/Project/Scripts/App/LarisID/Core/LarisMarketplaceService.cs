@@ -23,6 +23,12 @@ namespace LarisID
         public int FamousTierRequirement { get; }
         public StorePriceTier StoreTier { get; private set; }
 
+        /// <summary>
+        /// Pengatur ramai-sepinya pembeli. Diisi LarisIDManager dari Inspector;
+        /// bila kosong dipakai nilai default agar service tetap bisa dites sendiri.
+        /// </summary>
+        public LarisMarketTuning Tuning { get; set; } = new LarisMarketTuning();
+
         readonly List<LarisProduct> products = new();
         readonly List<DailyMarketResult> dailyHistory = new();
         int nextProductId;
@@ -328,7 +334,8 @@ namespace LarisID
             };
 
             var random = new System.Random(7391 + simulatedDay * 997 + products.Count * 37);
-            int remainingStoreSales = GetDailyStoreSalesCap(simulatedDay);
+            LarisMarketTuning tuning = Tuning ??= new LarisMarketTuning();
+            int remainingStoreSales = tuning.GetDailyStoreSalesCap(simulatedDay);
             foreach (LarisProduct product in products)
             {
                 ProductDayResult productResult = LarisMarketSimulator.SimulateProduct(
@@ -339,7 +346,8 @@ namespace LarisID
                     ActiveTrend,
                     StoreTier,
                     remainingStoreSales,
-                    random);
+                    random,
+                    tuning);
 
                 if (product.status != ProductStatus.Active)
                     continue;
@@ -401,14 +409,50 @@ namespace LarisID
         public LarisProduct GetBestSeller() =>
             products.OrderByDescending(p => p.sales).FirstOrDefault();
 
-        // Kapasitas berlaku untuk seluruh toko, bukan untuk setiap produk.
-        // Progress awal sengaja pelan agar pemain tidak langsung kaya.
-        public static int GetDailyStoreSalesCap(int day)
+        public LarisMarketplaceSaveData CaptureSaveData()
         {
-            if (day <= 7) return 3;
-            if (day <= 14) return 5;
-            if (day <= 30) return 8;
-            return 12;
+            return new LarisMarketplaceSaveData
+            {
+                shopName = ShopName,
+                shopDescription = ShopDescription,
+                balance = Balance,
+                followers = Followers,
+                currentDay = CurrentDay,
+                activeTrend = ActiveTrend,
+                storeTier = StoreTier,
+                nextProductId = nextProductId,
+                dummyIndex = dummyIndex,
+                products = products.ToList(),
+                dailyHistory = dailyHistory.ToList()
+            };
+        }
+
+        public void RestoreSaveData(LarisMarketplaceSaveData data)
+        {
+            if (data == null)
+                return;
+
+            ShopName = string.IsNullOrWhiteSpace(data.shopName) ? "Toko BRIDA" : data.shopName;
+            ShopDescription = data.shopDescription ?? string.Empty;
+            Balance = Math.Max(0L, data.balance);
+            Followers = Mathf.Max(0, data.followers);
+            CurrentDay = Mathf.Max(1, data.currentDay);
+            ActiveTrend = data.activeTrend;
+            StoreTier = data.storeTier;
+            nextProductId = Mathf.Max(1, data.nextProductId);
+            dummyIndex = Mathf.Max(0, data.dummyIndex);
+
+            products.Clear();
+            if (data.products != null)
+                products.AddRange(data.products.Where(product => product != null));
+            dailyHistory.Clear();
+            if (data.dailyHistory != null)
+                dailyHistory.AddRange(data.dailyHistory.Where(result => result != null));
+            LastDailyResult = dailyHistory.LastOrDefault();
+
+            // Save lama mungkin belum menyimpan counter ID.
+            if (products.Count >= nextProductId)
+                nextProductId = products.Count + 1;
         }
 
         void UpdateStoreTier()

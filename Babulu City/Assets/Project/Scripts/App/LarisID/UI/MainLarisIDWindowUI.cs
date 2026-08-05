@@ -2,10 +2,15 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using BabuluCity.SaveSystem;
+using BabuluCity.Tutorial;
 using IntegratedApps;
 using ProdukLM;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.InputSystem;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
 namespace LarisID
@@ -108,6 +113,37 @@ namespace LarisID
         RectTransform productContent;
         readonly List<ProductRow> productRows = new();
 
+        [Header("Popup Atur Harga")]
+        [Tooltip("Besar perubahan harga setiap klik tombol Add/Reduce Price.")]
+        [SerializeField, Min(100)] int priceStep = 1000;
+
+        [Header("Diagnosa")]
+        [Tooltip("Menulis log setiap tombol jual ditekan. Matikan bila sudah tidak diperlukan.")]
+        [SerializeField] bool logSellButtonClicks = true;
+        [Tooltip("Menulis objek UI yang benar-benar menerima klik. Berguna untuk menemukan panel yang memblokir raycast.")]
+        [SerializeField] bool logRaycastBlockers = true;
+
+        GameObject pricePopup;
+        TMP_Text pricePopupTitle;
+        TMP_Text pricePopupRange;
+        TMP_Text pricePopupIdeal;
+        TMP_Text pricePopupValue;
+        Button priceMinusButton;
+        Button pricePlusButton;
+        Button priceConfirmButton;
+        Button priceCancelButton;
+        LarisProduct pricePopupProduct;
+        int pendingPrice;
+
+        GameObject deletePopup;
+        TMP_Text deletePopupDescription;
+        Button deleteConfirmButton;
+        Button deleteCancelButton;
+        LarisProduct deletePopupProduct;
+
+        GameObject insufficientBalancePopup;
+        Button insufficientBalanceCloseButton;
+
         TMP_Text promotionProductName;
         TMP_Text promotionProductPrice;
         Image promotionProductIcon;
@@ -131,9 +167,9 @@ namespace LarisID
         [Tooltip("Drag TMP Text 'keterangan' (platform dan durasi) ke slot ini.")]
         [SerializeField]
         TMP_Text promotionConfirmationPlatformDays;
-        [Tooltip("Drag Image 'IconPenayanganKelas' ke slot ini.")]
+        [Tooltip("Drag Image khusus logo/aplikasi promosi pada panel ringkasan ke slot ini. Jangan drag background/card 'IconPenayanganKelas'.")]
         [SerializeField]
-        Image promotionConfirmationPlatformIcon;
+        Image promotionConfirmationAppIcon;
         [Tooltip("Drag TMP Text 'NilaiBiaya' ke slot ini.")]
         [SerializeField]
         TMP_Text promotionConfirmationCost;
@@ -199,6 +235,7 @@ namespace LarisID
             BindStaticButtons();
             BindDashboard();
             BindProducts();
+            BindProductPopups();
             BindPromotion();
             BindHistory();
             BindAnalytics();
@@ -218,6 +255,44 @@ namespace LarisID
         {
             if (windowRoot != null)
                 windowRoot.SetActive(false);
+        }
+
+        /// <summary>
+        /// Diagnosa sementara: mencetak seluruh objek UI yang menerima klik,
+        /// diurutkan dari yang paling depan. Bila tombol jual terasa mati,
+        /// objek teratas pada log inilah yang memblokir raycast-nya.
+        /// Matikan Log Raycast Blockers di Inspector bila sudah tidak perlu.
+        /// </summary>
+        void Update()
+        {
+            if (!logRaycastBlockers || windowRoot == null || !windowRoot.activeInHierarchy)
+                return;
+            if (Mouse.current == null || !Mouse.current.leftButton.wasPressedThisFrame)
+                return;
+
+            if (EventSystem.current == null)
+            {
+                Debug.LogWarning("[Laris.ID] Tidak ada EventSystem aktif; UI tidak bisa diklik.", this);
+                return;
+            }
+
+            var pointer = new PointerEventData(EventSystem.current)
+            {
+                position = Mouse.current.position.ReadValue()
+            };
+            var hits = new List<RaycastResult>();
+            EventSystem.current.RaycastAll(pointer, hits);
+
+            if (hits.Count == 0)
+            {
+                Debug.Log("[Laris.ID] Klik tidak mengenai objek UI mana pun.", this);
+                return;
+            }
+
+            Debug.Log(
+                "[Laris.ID] Penerima klik (depan ke belakang): " +
+                string.Join("  <-  ", hits.Select(hit => hit.gameObject.name)),
+                hits[0].gameObject);
         }
 
         void OnDestroy()
@@ -425,7 +500,8 @@ namespace LarisID
                 confirmationPromoter, "Nama Tempat Promosi", "data.TXT");
             promotionConfirmationPlatformDays ??= FindText(
                 confirmationPromoter, "keterangan", "Ket.TXT");
-            promotionConfirmationPlatformIcon ??= confirmationPromoter?.GetComponent<Image>();
+            // Icon aplikasi harus dihubungkan manual dari Inspector agar sprite
+            // tidak menimpa background kartu IconPenayanganKelas.
             promotionConfirmationCost ??= FindText(
                 FindNamed(confirmation, "IconDuit"), "NilaiBiaya", "data.TXT (1)");
             promotionConfirmationBoost ??= FindText(
@@ -566,18 +642,56 @@ namespace LarisID
         {
             if (!isBound)
                 return;
+            // Tutorial hari pertama menahan pemain agar tidak pindah aplikasi
+            // sebelum tugas pada langkah yang sedang berjalan selesai.
+            if (TutorialGuard.Blocks(TutorialAction.OpenLarisID))
+                return;
             if (produkLMWindow != null)
                 produkLMWindow.SetActive(false);
             windowRoot.SetActive(true);
             windowRoot.transform.SetAsLastSibling();
             if (desktopTaskbar != null)
                 desktopTaskbar.SetAsLastSibling();
+            ValidateClickInfrastructure();
             ShowPage(currentPage);
             RefreshAll();
         }
 
+        void ValidateClickInfrastructure()
+        {
+            EventSystem[] activeSystems = UnityEngine.Object.FindObjectsByType<EventSystem>(
+                    FindObjectsInactive.Exclude)
+                .Where(system => system.isActiveAndEnabled)
+                .ToArray();
+            if (activeSystems.Length != 1)
+                Debug.LogWarning(
+                    $"[Laris.ID] Ditemukan {activeSystems.Length} EventSystem aktif. " +
+                    "UI membutuhkan tepat satu EventSystem aktif.",
+                    this);
+
+            Canvas canvas = windowRoot != null ? windowRoot.GetComponentInParent<Canvas>(true) : null;
+            if (canvas == null)
+            {
+                Debug.LogError("[Laris.ID] Window tidak berada di bawah Canvas.", this);
+                return;
+            }
+
+            GraphicRaycaster raycaster = canvas.GetComponent<GraphicRaycaster>();
+            if (raycaster == null)
+            {
+                raycaster = canvas.gameObject.AddComponent<GraphicRaycaster>();
+                Debug.LogWarning(
+                    $"[Laris.ID] GraphicRaycaster tidak ada pada Canvas '{canvas.name}' dan dipasang otomatis.",
+                    canvas);
+            }
+            raycaster.enabled = true;
+        }
+
         public void CloseWindow()
         {
+            if (TutorialGuard.Blocks(TutorialAction.CloseLarisID))
+                return;
+
             if (windowRoot != null)
                 windowRoot.SetActive(false);
         }
@@ -666,26 +780,201 @@ namespace LarisID
 
             row.editButton?.onClick.RemoveAllListeners();
             if (row.editButton != null)
-                row.editButton.interactable = false;
+            {
+                row.editButton.interactable = true;
+                row.editButton.onClick.AddListener(() => OpenPricePopup(product));
+            }
             row.deleteButton?.onClick.RemoveAllListeners();
-            row.deleteButton?.onClick.AddListener(() => manager.DeleteProduct(product));
-            row.activeButton?.onClick.RemoveAllListeners();
-            row.activeButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
-            row.inactiveButton?.onClick.RemoveAllListeners();
-            row.inactiveButton?.onClick.AddListener(() => manager.ToggleProductActive(product));
+            row.deleteButton?.onClick.AddListener(() => OpenDeletePopup(product));
+            // Badge Aktif/Mati adalah tombol "Jual". Variabel lokal dipakai agar
+            // closure selalu menunjuk produk baris ini, bukan produk terakhir
+            // pada perulangan RefreshProducts.
+            LarisProduct selectedProduct = product;
+            BindSellButton(row.activeButton, selectedProduct);
+            BindSellButton(row.inactiveButton, selectedProduct);
 
             if (row.priceInput != null)
             {
                 row.priceInput.onEndEdit.RemoveAllListeners();
-                row.priceInput.onEndEdit.AddListener(value =>
-                {
-                    string digits = new string((value ?? string.Empty).Where(char.IsDigit).ToArray());
-                    if (int.TryParse(digits, out int price))
-                        manager.SetProductPrice(product, price);
-                    else
-                        RefreshProducts();
-                });
+                row.priceInput.interactable = false;
             }
+        }
+
+        /// <summary>
+        /// Memasang ulang tombol Aktif/Mati sekaligus memastikan syarat
+        /// klik-nya terpenuhi: listener bersih, tombol interactable, dan
+        /// Graphic-nya benar-benar menerima raycast.
+        /// </summary>
+        void BindSellButton(Button button, LarisProduct product)
+        {
+            if (button == null)
+                return;
+
+            button.onClick.RemoveAllListeners();
+            // Teks/icon anak status sebelumnya ikut menerima raycast di atas
+            // root Button. Jadikan root satu-satunya penerima klik agar Scroll
+            // View tidak salah memilih Graphic dekoratif.
+            MakeButtonResponsive(button, true);
+
+            // Tanpa targetGraphic yang menerima raycast, Button tidak pernah
+            // menerima klik walaupun listener-nya terpasang.
+            if (button.targetGraphic == null && button.TryGetComponent(out Graphic own))
+                button.targetGraphic = own;
+            if (button.targetGraphic != null)
+                button.targetGraphic.raycastTarget = true;
+
+            // CanvasGroup induk yang memblokir membuat seluruh baris mati klik.
+            foreach (CanvasGroup group in button.GetComponentsInParent<CanvasGroup>(true))
+            {
+                if (group.blocksRaycasts && group.interactable && group.alpha > 0.01f)
+                    continue;
+                Debug.LogWarning(
+                    $"CanvasGroup '{group.name}' memblokir tombol jual " +
+                    $"(alpha={group.alpha}, interactable={group.interactable}, " +
+                    $"blocksRaycasts={group.blocksRaycasts}). Nilainya dipulihkan.",
+                    group);
+                group.alpha = Mathf.Max(group.alpha, 1f);
+                group.interactable = true;
+                group.blocksRaycasts = true;
+            }
+
+            button.onClick.AddListener(() =>
+            {
+                if (logSellButtonClicks)
+                    Debug.Log($"[Laris.ID] Tombol jual ditekan untuk '{product.productName}' " +
+                              $"(status sekarang: {product.status}).", button);
+                ProductStatus previousStatus = product.status;
+                manager.ToggleProductActive(product);
+                if (product.status == previousStatus)
+                    Debug.LogWarning(
+                        $"[Laris.ID] Status '{product.productName}' tidak berubah: {manager.LastMessage}",
+                        button);
+                else if (logSellButtonClicks)
+                    Debug.Log(
+                        $"[Laris.ID] '{product.productName}' sekarang berstatus {product.status}.",
+                        button);
+            });
+        }
+
+        void BindProductPopups()
+        {
+            pricePopup = FindSceneNamed("Set harga Pop up")?.gameObject;
+            Transform priceBox = FindNamed(pricePopup?.transform, "MainBOX");
+            pricePopupTitle = FindText(priceBox, "Title Pop Up");
+            pricePopupRange = FindText(priceBox, "Rentang Harga");
+            pricePopupIdeal = FindText(priceBox, "Rekomendasi");
+            // Teks nilai harga pada desain bernama "Harga", bukan "Text (TMP)".
+            // Bila tidak ditemukan, popup hanya menampilkan teks placeholder
+            // desain dan tombol +/- terlihat tidak berfungsi walaupun nilainya
+            // sebenarnya berubah.
+            pricePopupValue = FindText(FindNamed(priceBox, "price bg"), "Harga", "Text (TMP)");
+            // BindClick memanggil RemoveAllListeners lebih dulu, jadi membuka
+            // popup berkali-kali tidak menumpuk listener pada tombol yang sama.
+            priceMinusButton = BindClick(FindNamed(priceBox, "Reduce price button"), () => ChangePendingPrice(-priceStep));
+            pricePlusButton = BindClick(FindNamed(priceBox, "Add price button"), () => ChangePendingPrice(priceStep));
+            priceConfirmButton = BindClick(FindNamed(priceBox, "Set Harga Button"), ConfirmPricePopup);
+            priceCancelButton = BindClick(FindNamed(priceBox, "Kembali Button"), ClosePricePopup);
+
+            if (pricePopupValue == null)
+                Debug.LogWarning(
+                    "Teks nilai harga tidak ditemukan di 'Set harga Pop up' > MainBOX > 'price bg'. " +
+                    "Tombol +/- tetap bekerja tetapi angkanya tidak terlihat berubah.",
+                    this);
+            if (priceMinusButton == null || pricePlusButton == null)
+                Debug.LogWarning(
+                    "Tombol 'Add price button' / 'Reduce price button' tidak ditemukan di 'Set harga Pop up'.",
+                    this);
+
+            deletePopup = FindSceneNamed("delete confirm Pop up")?.gameObject;
+            Transform deleteBox = FindNamed(deletePopup?.transform, "MainBOX");
+            deletePopupDescription = FindText(deleteBox, "deksripsi hapus", "deskripsi hapus");
+            deleteConfirmButton = BindClick(FindNamed(deleteBox, "Set Harga Button"), ConfirmDeletePopup);
+            deleteCancelButton = BindClick(FindNamed(deleteBox, "Kembali Button"), CloseDeletePopup);
+
+            insufficientBalancePopup = FindSceneNamed("Saldo Tidak Mencukupi")?.gameObject;
+            insufficientBalanceCloseButton = BindClick(
+                FindNamed(insufficientBalancePopup?.transform, "KembaliBOX", "Kembali Button"),
+                () => SetPopupActive(insufficientBalancePopup, false));
+
+            SetPopupActive(pricePopup, false);
+            SetPopupActive(deletePopup, false);
+            SetPopupActive(insufficientBalancePopup, false);
+        }
+
+        void OpenPricePopup(LarisProduct product)
+        {
+            if (product == null || pricePopup == null)
+                return;
+            pricePopupProduct = product;
+            PriceRange unlocked = LarisPricing.GetMarketBand(product, manager.Marketplace.StoreTier);
+            // Disnap ke kelipatan step supaya tombol +/- menghasilkan angka bulat.
+            int step = Mathf.Max(1, priceStep);
+            pendingPrice = Mathf.Clamp(
+                Mathf.RoundToInt(product.price / (float)step) * step,
+                unlocked.minimum,
+                unlocked.maximum);
+            PriceRange recommended = LarisPricing.GetRecommendedRange(product, manager.Marketplace.StoreTier);
+            SetText(pricePopupTitle, $"ATUR HARGA — {product.productName}");
+            SetText(pricePopupRange, $"Rentang Harga: {Rupiah(unlocked.minimum)} – {Rupiah(unlocked.maximum)}");
+            SetText(pricePopupIdeal, $"Harga Ideal: {Rupiah(recommended.ideal)}");
+            RefreshPendingPrice();
+            SetPopupActive(pricePopup, true);
+        }
+
+        void ChangePendingPrice(int delta)
+        {
+            if (pricePopupProduct == null)
+                return;
+
+            // Harga dijepit ke batas minimum/maksimum yang sudah terbuka untuk
+            // level toko, jadi tombol berhenti sendiri di ujung rentang.
+            PriceRange unlocked = LarisPricing.GetMarketBand(pricePopupProduct, manager.Marketplace.StoreTier);
+            pendingPrice = Mathf.Clamp(pendingPrice + delta, unlocked.minimum, unlocked.maximum);
+            RefreshPendingPrice();
+        }
+
+        void RefreshPendingPrice() => SetText(pricePopupValue, Rupiah(pendingPrice));
+
+        void ConfirmPricePopup()
+        {
+            if (pricePopupProduct != null)
+                manager.SetProductPrice(pricePopupProduct, pendingPrice);
+            ClosePricePopup();
+            // Baris produk memperlihatkan harga baru sebelum popup benar-benar hilang.
+            RefreshProducts();
+            RefreshPromotion();
+            GameSaveManager.SaveImportant();
+        }
+
+        void ClosePricePopup()
+        {
+            SetPopupActive(pricePopup, false);
+            pricePopupProduct = null;
+        }
+
+        void OpenDeletePopup(LarisProduct product)
+        {
+            if (product == null || deletePopup == null)
+                return;
+            deletePopupProduct = product;
+            SetText(deletePopupDescription,
+                $"Hapus ‘{product.productName}’? Data penjualan produk ini juga akan dihapus.");
+            SetPopupActive(deletePopup, true);
+        }
+
+        void ConfirmDeletePopup()
+        {
+            if (deletePopupProduct != null)
+                manager.DeleteProduct(deletePopupProduct);
+            CloseDeletePopup();
+            RefreshAll();
+            GameSaveManager.SaveImportant();
+        }
+
+        void CloseDeletePopup()
+        {
+            SetPopupActive(deletePopup, false);
+            deletePopupProduct = null;
         }
 
         void RefreshPromotion()
@@ -784,15 +1073,15 @@ namespace LarisID
                 selectedOffer != null
                     ? $"{PromotionPlatformLabel(selectedOffer.platform)} • {selectedOffer.durationDays} Hari"
                     : string.Empty);
-            if (promotionConfirmationPlatformIcon != null)
+            if (promotionConfirmationAppIcon != null)
             {
-                promotionConfirmationPlatformIcon.sprite = selectedOffer != null
+                promotionConfirmationAppIcon.sprite = selectedOffer != null
                     ? ResolvePromotionPlatformIcon(selectedOffer.platform, null)
                     : null;
-                promotionConfirmationPlatformIcon.preserveAspect = true;
-                promotionConfirmationPlatformIcon.color = Color.white;
-                promotionConfirmationPlatformIcon.enabled =
-                    promotionConfirmationPlatformIcon.sprite != null;
+                promotionConfirmationAppIcon.preserveAspect = true;
+                promotionConfirmationAppIcon.color = Color.white;
+                promotionConfirmationAppIcon.enabled =
+                    promotionConfirmationAppIcon.sprite != null;
             }
             SetText(promotionConfirmationCost,
                 selectedOffer != null ? Rupiah(selectedOffer.cost) : string.Empty);
@@ -802,7 +1091,7 @@ namespace LarisID
             {
                 runPromotionButton.interactable =
                     product != null && selectedOffer != null &&
-                    !product.IsPromoted && manager.Marketplace.Balance >= selectedOffer.cost;
+                    !product.IsPromoted;
             }
         }
 
@@ -854,7 +1143,13 @@ namespace LarisID
             LarisProduct product = CurrentPromotionProduct();
             if (product == null || selectedOffer == null)
                 return;
+            if (manager.Marketplace.Balance < selectedOffer.cost)
+            {
+                SetPopupActive(insufficientBalancePopup, true);
+                return;
+            }
             manager.PromoteProduct(product, selectedOffer);
+            GameSaveManager.SaveImportant();
         }
 
         void ChangePromotionProduct(int direction)
@@ -1002,7 +1297,10 @@ namespace LarisID
 
         PromotionRow CreatePromotionRow(GameObject root)
         {
-            Image platformIcon = FindNamed(root.transform, "icon")?.GetComponent<Image>();
+            // Setiap kartu, termasuk hasil clone runtime, mencari child Image icon
+            // miliknya sendiri. Sprite yang dipasang memakai resolver yang sama
+            // dengan icon pada panel ringkasan promosi.
+            Image platformIcon = FindPromotionCardIcon(root.transform);
             Image selectionGraphic = root.GetComponent<Image>();
             Button cardButton = BindClick(root.transform, null);
             MakeButtonResponsive(cardButton, true);
@@ -1018,6 +1316,40 @@ namespace LarisID
                 platformIcon = platformIcon,
                 defaultPlatformIcon = platformIcon != null ? platformIcon.sprite : null
             };
+        }
+
+        static Image FindPromotionCardIcon(Transform cardRoot)
+        {
+            if (cardRoot == null)
+                return null;
+
+            // Struktur prefab:
+            // PanelPilihanPromosi/PanelPilihanPromosi/framePromosi/APK
+            // Hanya Image bernama APK yang boleh diganti. Jangan memakai fallback
+            // ke Image lain karena dapat menimpa background framePromosi.
+            Transform apk = Descendants(cardRoot)
+                .FirstOrDefault(item =>
+                    item.name.Equals("APK", StringComparison.OrdinalIgnoreCase));
+
+            if (apk == null)
+            {
+                Debug.LogWarning(
+                    $"[Laris.ID] Child 'APK' tidak ditemukan pada kartu promotor '{cardRoot.name}'. " +
+                    "Pastikan setiap template kartu memiliki framePromosi/APK.",
+                    cardRoot);
+                return null;
+            }
+
+            Image apkImage = apk.GetComponent<Image>();
+            if (apkImage == null)
+            {
+                Debug.LogWarning(
+                    $"[Laris.ID] GameObject '{apk.name}' pada kartu '{cardRoot.name}' tidak memiliki komponen Image.",
+                    apk);
+                return null;
+            }
+
+            return apkImage;
         }
 
         HistoryRow CreateHistoryRow(GameObject root)
@@ -1116,7 +1448,7 @@ namespace LarisID
             input.textViewport = text.rectTransform;
             input.textComponent = text;
             text.raycastTarget = true;
-            input.targetGraphic = host.GetComponent<Graphic>() ?? text;
+            input.targetGraphic = host.TryGetComponent(out Graphic hostGraphic) ? hostGraphic : text;
             input.contentType = contentType;
             input.lineType = lineType;
             input.richText = false;
@@ -1155,7 +1487,8 @@ namespace LarisID
             Button button = target.GetComponent<Button>();
             if (button == null) button = target.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             if (action != null)
             {
                 button.onClick.RemoveAllListeners();
@@ -1171,7 +1504,8 @@ namespace LarisID
             Button button = target.GetComponent<Button>();
             if (button == null) button = target.gameObject.AddComponent<Button>();
             button.transition = Selectable.Transition.None;
-            button.targetGraphic ??= target.GetComponent<Graphic>();
+            if (button.targetGraphic == null && target.TryGetComponent(out Graphic graphic))
+                button.targetGraphic = graphic;
             if (action != null)
                 button.onClick.AddListener(() => action());
             return button;
@@ -1249,6 +1583,38 @@ namespace LarisID
                 }
             }
             return null;
+        }
+
+        static Transform FindSceneNamed(params string[] names)
+        {
+            Scene activeScene = SceneManager.GetActiveScene();
+            foreach (Transform item in UnityEngine.Object.FindObjectsByType<Transform>(FindObjectsInactive.Include))
+            {
+                if (item.gameObject.scene != activeScene)
+                    continue;
+                foreach (string name in names)
+                    if (item.name.Equals(name, StringComparison.OrdinalIgnoreCase))
+                        return item;
+            }
+            return null;
+        }
+
+        static void SetPopupActive(GameObject popup, bool active)
+        {
+            if (popup == null)
+                return;
+
+            // Popup tidak aktif memang biasanya tidak diraycast Unity, tetapi
+            // CanvasGroup eksplisit membuat state aman juga saat animator/desain
+            // hanya menyembunyikan visual tanpa menonaktifkan root.
+            foreach (CanvasGroup group in popup.GetComponentsInChildren<CanvasGroup>(true))
+            {
+                group.interactable = active;
+                group.blocksRaycasts = active;
+            }
+
+            if (popup.activeSelf != active)
+                popup.SetActive(active);
         }
 
         static IEnumerable<Transform> Descendants(Transform root)

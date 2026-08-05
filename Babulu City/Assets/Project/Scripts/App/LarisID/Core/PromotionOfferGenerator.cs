@@ -7,6 +7,18 @@ namespace LarisID
 {
     public static class PromotionOfferGenerator
     {
+        /// <summary>Biaya promosi termurah yang boleh muncul.</summary>
+        public const long MinimumCost = 50000;
+
+        /// <summary>Biaya promosi termahal yang boleh muncul.</summary>
+        public const long MaximumCost = 500000;
+
+        // Rentang biaya mentah pada tabel Profiles di bawah. Dipakai untuk
+        // memetakan harga lama ke rentang Rp50.000-Rp500.000 tanpa mengubah
+        // urutan murah-mahal antar promotor.
+        const float RawCheapest = 25000f;
+        const float RawPriciest = 275000f;
+
         readonly struct Profile
         {
             public readonly string name;
@@ -80,7 +92,7 @@ namespace LarisID
                     id = $"DAY-{day:000}-{i:00}",
                     promoterName = profile.name,
                     platform = profile.platform,
-                    cost = RoundToFiveThousand(profile.cost * costVariation),
+                    cost = ToOfferCost(profile.cost * costVariation),
                     durationDays = profile.days,
                     viewBoostPercent = Mathf.Max(10, profile.boost + boostVariation)
                 });
@@ -88,7 +100,16 @@ namespace LarisID
             return offers;
         }
 
-        static long RoundToFiveThousand(float value) =>
-            Math.Max(5000, (long)Math.Round(value / 5000f) * 5000);
+        /// <summary>
+        /// Memetakan biaya mentah ke rentang Rp50.000-Rp500.000, dibulatkan ke
+        /// kelipatan lima ribu, lalu dijepit supaya tidak pernah keluar rentang.
+        /// </summary>
+        static long ToOfferCost(float rawCost)
+        {
+            float position = Mathf.InverseLerp(RawCheapest, RawPriciest, rawCost);
+            float scaled = Mathf.Lerp(MinimumCost, MaximumCost, position);
+            long rounded = (long)Math.Round(scaled / 5000f) * 5000;
+            return Math.Min(MaximumCost, Math.Max(MinimumCost, rounded));
+        }
     }
 }

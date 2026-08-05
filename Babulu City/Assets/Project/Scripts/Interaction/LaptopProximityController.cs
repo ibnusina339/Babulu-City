@@ -1,4 +1,6 @@
 using System.Collections;
+using BabuluCity.Core;
+using BabuluCity.Tutorial;
 using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
@@ -52,12 +54,17 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (IsEditingText())
             return;
 
-        bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame;
-        bool escapePressed = Keyboard.current.escapeKey.wasPressedThisFrame;
+        // Ctrl+Shift+Alt+E adalah pintasan menuju ENDING, bukan perintah
+        // membuka atau menutup laptop.
+        bool interactPressed = Keyboard.current.eKey.wasPressedThisFrame &&
+                               !EndingShortcut.ShortcutModifiersHeld;
 
         if (laptopOpened)
         {
-            if (interactPressed || escapePressed)
+            // ESC ditangani EscapeStack agar popup/aplikasi di dalam desktop
+            // tertutup lebih dulu sebelum laptopnya sendiri. Tutorial hari
+            // pertama boleh menahan pemain sampai tugasnya selesai.
+            if (interactPressed && !TutorialGuard.Blocks(TutorialAction.CloseLaptop))
                 StartCoroutine(SetLaptopOpen(false));
 
             return;
@@ -73,8 +80,11 @@ public sealed class LaptopProximityController : MonoBehaviour
         if (selected == null)
             return false;
 
-        TMP_InputField input = selected.GetComponent<TMP_InputField>() ??
-                               selected.GetComponentInParent<TMP_InputField>();
+        // GetComponent memberi "fake null" di Editor bila komponen tidak ada,
+        // sehingga ?? tidak pernah jatuh ke pencarian parent.
+        TMP_InputField input = selected.TryGetComponent(out TMP_InputField field)
+            ? field
+            : selected.GetComponentInParent<TMP_InputField>();
         return input != null && input.isFocused;
     }
 
@@ -157,6 +167,11 @@ public sealed class LaptopProximityController : MonoBehaviour
             desktopRoot.SetActive(open);
 
         laptopOpened = open;
+        if (open)
+            EscapeStack.Register(this, EscapeLayer.Screen, CloseLaptopFromEscape);
+        else
+            EscapeStack.Unregister(this);
+
         yield return null;
         yield return Fade(1f, 0f);
 
@@ -164,6 +179,28 @@ public sealed class LaptopProximityController : MonoBehaviour
             playerMovement?.ResumeMovement();
 
         transitioning = false;
+    }
+
+    void CloseLaptopFromEscape()
+    {
+        if (!laptopOpened || transitioning)
+            return;
+
+        if (TutorialGuard.Blocks(TutorialAction.CloseLaptop))
+        {
+            // EscapeStack melepas entri ini sebelum memanggil callback. Karena
+            // laptop tidak jadi ditutup, entrinya didaftarkan ulang supaya ESC
+            // berikutnya tidak langsung memunculkan popup keluar game.
+            EscapeStack.Register(this, EscapeLayer.Screen, CloseLaptopFromEscape);
+            return;
+        }
+
+        StartCoroutine(SetLaptopOpen(false));
+    }
+
+    void OnDisable()
+    {
+        EscapeStack.Unregister(this);
     }
 
     IEnumerator Fade(float from, float to)

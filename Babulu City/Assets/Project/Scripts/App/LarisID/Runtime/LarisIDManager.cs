@@ -9,6 +9,10 @@ namespace LarisID
         [Min(1)] public int growingTierRequirement = 120;
         [Min(2)] public int famousTierRequirement = 500;
 
+        [Header("Frekuensi pembeli harian")]
+        [Tooltip("Atur ramai-sepinya pasar tanpa mengubah rumus simulasi.")]
+        public LarisMarketTuning marketTuning = new LarisMarketTuning();
+
         public LarisMarketplaceService Marketplace { get; private set; }
         public LarisProduct SelectedProduct { get; private set; }
         public string LastMessage { get; private set; } = "Laris.ID siap diuji.";
@@ -24,11 +28,18 @@ namespace LarisID
         public void EnsureInitialized()
         {
             if (Marketplace != null)
+            {
+                // Nilai Inspector tetap dipakai walaupun service sudah dibuat.
+                Marketplace.Tuning = marketTuning ??= new LarisMarketTuning();
                 return;
+            }
 
             Marketplace = new LarisMarketplaceService(
                 growingTierRequirement,
-                famousTierRequirement);
+                famousTierRequirement)
+            {
+                Tuning = marketTuning ??= new LarisMarketTuning()
+            };
         }
 
         public LarisProduct AddDummyProduct()
@@ -114,12 +125,28 @@ namespace LarisID
             {
                 Marketplace.Archive(product);
                 LastMessage = $"'{product.productName}' dinonaktifkan dari toko.";
+                NotifyChanged();
+                return;
             }
-            else
+
+            // Harga yang tersimpan bisa berada di luar rentang level toko saat
+            // ini, misalnya setelah level toko naik atau setelah save lama
+            // dimuat. Publish lalu selalu gagal, dan karena Laris.ID tidak punya
+            // area pesan, tombol Aktif/Mati terlihat seperti tidak bisa ditekan.
+            // Harga dirapikan dulu ke rentang yang berlaku supaya alasan gagal
+            // hanya tersisa untuk data yang memang belum lengkap.
+            PriceRange band = LarisPricing.GetMarketBand(product, Marketplace.StoreTier);
+            if (product.price < band.minimum || product.price > band.maximum)
+                Marketplace.SetPrice(product, Mathf.Clamp(product.price, band.minimum, band.maximum), out _);
+
+            if (!Marketplace.Publish(product, out string publishMessage))
             {
-                Marketplace.Publish(product, out string message);
-                LastMessage = message;
+                Debug.LogWarning(
+                    $"Produk '{product.productName}' belum dapat dijual: {publishMessage}",
+                    this);
             }
+
+            LastMessage = publishMessage;
             NotifyChanged();
         }
 
