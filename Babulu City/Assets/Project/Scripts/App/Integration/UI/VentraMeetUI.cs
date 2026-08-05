@@ -5,9 +5,6 @@ using BabuluCity.Core;
 using BabuluCity.SaveSystem;
 using UnityEngine;
 using UnityEngine.UI;
-#if ENABLE_INPUT_SYSTEM
-using UnityEngine.InputSystem;
-#endif
 
 namespace IntegratedApps
 {
@@ -19,6 +16,8 @@ namespace IntegratedApps
         [SerializeField] GameObject confirmationScreen;
         [SerializeField] GameObject unavailableScreen;
         [SerializeField] GameObject missedScheduleScreen;
+        [Tooltip("Opsional. Popup 'jadwal belum dimulai'. Bila kosong, popup 'Tidak ada Jadwal' dipakai dengan teks yang disesuaikan.")]
+        [SerializeField] GameObject notStartedScreen;
         [SerializeField] GameObject studyScreen;
         [SerializeField] Button confirmStudyButton;
         [SerializeField] Button backButton;
@@ -26,18 +25,35 @@ namespace IntegratedApps
         [SerializeField] GameObject fastForwardRoot;
 
         [Header("Pengaturan Belajar")]
-        [Min(1f)] [SerializeField] float studyDurationSeconds = 15f;
+        [Tooltip("Lama sesi bimbel dalam detik nyata. 7 detik = 2 jam waktu game.")]
+        [Min(1f)] [SerializeField] float studyDurationSeconds = 7f;
         [Min(0f)] [SerializeField] float consumedGameHours = 2f;
         [Min(0)] [SerializeField] int scorePerSession = 10;
+        [Tooltip("Kecepatan animasi fast forward dalam frame per detik. Hanya visual; durasi belajar tetap Study Duration Seconds.")]
+        [Min(0.5f)] [SerializeField] float fastForwardFramesPerSecond = 3.5f;
 
-        readonly List<GameObject> sequentialParticipants = new();
+        [Header("Jadwal Bimbel (tanggal Agustus)")]
+        [Tooltip("Tanggal bimbel pada bulan Agustus.")]
+        [SerializeField] int[] scheduleDays = { 3, 5, 6, 8 };
+        [SerializeField, Range(0, 23)] int scheduleStartHour = 20;
+        [SerializeField, Range(0, 59)] int scheduleStartMinute;
+        [SerializeField, Range(0, 23)] int scheduleEndHour = 21;
+        [SerializeField, Range(0, 59)] int scheduleEndMinute = 30;
+
+        int ScheduleStartMinutes => scheduleStartHour * 60 + scheduleStartMinute;
+        int ScheduleEndMinutes => scheduleEndHour * 60 + scheduleEndMinute;
+
+        readonly List<GameObject> participants = new();
         readonly List<GameObject> fastForwardFrames = new();
+        readonly Dictionary<Animator, float> originalAnimatorSpeeds = new();
         Coroutine studyRoutine;
         GameClockUI gameClock;
         int completedSessions;
         int studyScore;
         int studiedDateMask;
         float appliedStudyHours;
+        bool clockPlaybackCaptured;
+        bool clockWasRunning;
         bool initialized;
 
         public int CompletedSessions => completedSessions;
@@ -59,29 +75,24 @@ namespace IntegratedApps
             gameObject.SetActive(false);
         }
 
-        void Update()
-        {
-            if (gameObject.activeInHierarchy && EscapePressedThisFrame())
-                ShowDesktop();
-        }
-
-        static bool EscapePressedThisFrame()
-        {
-#if ENABLE_INPUT_SYSTEM
-            return Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame;
-#elif ENABLE_LEGACY_INPUT_MANAGER
-            return Input.GetKeyDown(KeyCode.Escape);
-#else
-            return false;
-#endif
-        }
-
         void OnDestroy()
         {
+            EscapeStack.Unregister(this);
             Button appButton = desktopAppButton != null ? desktopAppButton.GetComponent<Button>() : null;
             appButton?.onClick.RemoveListener(OpenApp);
             confirmStudyButton?.onClick.RemoveListener(StartStudy);
-            backButton?.onClick.RemoveListener(ShowDesktop);
+            backButton?.onClick.RemoveListener(CloseTopmostPanel);
+        }
+
+        void OnDisable()
+        {
+            if (studyRoutine != null)
+            {
+                StopCoroutine(studyRoutine);
+                studyRoutine = null;
+            }
+            RestoreClockPlayback();
+            RestoreMeetingAnimatorSpeed();
         }
 
         public void OpenApp()
@@ -92,40 +103,108 @@ namespace IntegratedApps
             SetProgress(0f);
             gameClock ??= Object.FindAnyObjectByType<GameClockUI>(FindObjectsInactive.Include);
 
+            if (gameClock == null)
+            {
+                Debug.LogWarning(
+                    $"{nameof(VentraMeetUI)} pada '{name}' tidak menemukan GameClockUI. " +
+                    "Jadwal bimbel tidak dapat diperiksa.",
+                    this);
+                ShowScheduleScreen(unavailableScreen, null);
+                return;
+            }
+
+            int nowMinutes = gameClock.CurrentGameMinutes;
+
             if (!IsScheduledToday() || AlreadyStudiedToday())
-                SetActive(unavailableScreen, true);
-            else if (gameClock != null && gameClock.CurrentGameMinutes > 21 * 60 + 30)
-                SetActive(missedScheduleScreen, true);
+                ShowScheduleScreen(unavailableScreen, null);
+            else if (nowMinutes > ScheduleEndMinutes)
+                ShowScheduleScreen(missedScheduleScreen, null);
+            else if (nowMinutes < ScheduleStartMinutes)
+                ShowScheduleScreen(
+                    notStartedScreen != null ? notStartedScreen : unavailableScreen,
+                    $"Bimbel baru dimulai pukul {ScheduleStartHourText()}. Datang lagi nanti ya.");
             else
-                SetActive(confirmationScreen, true);
+                ShowScheduleScreen(confirmationScreen, null);
+
+            EscapeStack.Register(this, EscapeLayer.App, CloseTopmostPanel);
         }
 
         public void StartStudy()
         {
             if (studyRoutine != null || gameClock == null || gameClock.ReachedEnd)
                 return;
-            if (!IsScheduledToday() || AlreadyStudiedToday() || gameClock.CurrentGameMinutes > 21 * 60 + 30)
+
+            int nowMinutes = gameClock.CurrentGameMinutes;
+            if (!IsScheduledToday() || AlreadyStudiedToday() ||
+                nowMinutes > ScheduleEndMinutes || nowMinutes < ScheduleStartMinutes)
             {
                 OpenApp();
                 return;
             }
 
+            // Jadwal ditandai terpakai sejak sesi dimulai supaya satu tanggal
+            // tidak pernah dapat memulai dua coroutine belajar sekaligus.
+            MarkTodayStudied();
+
+            clockWasRunning = gameClock.runAutomatically;
+            clockPlaybackCaptured = true;
+            gameClock.runAutomatically = false;
+
             appliedStudyHours = 0f;
             SetActive(confirmationScreen, false);
             SetActive(studyScreen, true);
             SetActive(fastForwardRoot, true);
-            ResetSequentialVisuals();
+            ShowAllParticipants();
+            SetMeetingAnimatorSpeed(0.5f);
             SetProgress(0f);
             studyRoutine = StartCoroutine(StudyRoutine());
+        }
+
+        /// <summary>
+        /// Tombol Kembali dan ESC. Setiap panel VentraMeet adalah satu-satunya
+        /// isi aplikasi, jadi menutup panel sama dengan kembali ke desktop.
+        /// Popup keluar game tidak ikut terpicu karena ESC dirutekan EscapeStack.
+        /// </summary>
+        public void CloseTopmostPanel()
+        {
+            // Setelah belajar dikonfirmasi, sesi 7 detik harus selesai utuh.
+            // Jika ESC ditekan, daftarkan kembali lapisan ini agar ESC berikutnya
+            // tidak membuka popup keluar game di belakang meeting.
+            if (IsStudying)
+            {
+                EscapeStack.Register(this, EscapeLayer.App, CloseTopmostPanel);
+                return;
+            }
+            ShowDesktop();
         }
 
         public void ShowDesktop()
         {
             // Waktu tetap dikonsumsi penuh jika sesi sudah dikonfirmasi.
             StopStudy(true);
+            ResetMeetingPanel();
             HideScreens();
+            EscapeStack.Unregister(this);
             gameObject.SetActive(false);
         }
+
+        void ShowScheduleScreen(GameObject screen, string overrideDescription)
+        {
+            if (screen == null)
+                return;
+
+            SetActive(screen, true);
+            if (string.IsNullOrEmpty(overrideDescription))
+                return;
+
+            TMPro.TMP_Text description = FindIn(screen.transform, "deskripsi bimbel")
+                ?.GetComponent<TMPro.TMP_Text>();
+            if (description != null)
+                description.text = overrideDescription;
+        }
+
+        string ScheduleStartHourText() =>
+            $"{scheduleStartHour:00}.{scheduleStartMinute:00}";
 
         IEnumerator StudyRoutine()
         {
@@ -142,9 +221,9 @@ namespace IntegratedApps
 
             SetProgress(1f);
             ApplyFastForward(1f);
+            // Tanggalnya sudah ditandai saat sesi dimulai, di sini hanya nilai.
             completedSessions = Mathf.Min(4, completedSessions + 1);
             studyScore += scorePerSession;
-            MarkTodayStudied();
             studyRoutine = null;
             GameSaveManager.SaveImportant();
             ShowDesktop();
@@ -178,13 +257,16 @@ namespace IntegratedApps
             confirmationScreen ??= FindIn(transform, "KonfirmasiScreen")?.gameObject;
             unavailableScreen ??= FindIn(transform, "Batas Bimbel", "Tidak ada Jadwal")?.gameObject;
             missedScheduleScreen ??= FindSceneObject("Jadwal terlewat");
+            notStartedScreen ??= FindIn(transform, "Jadwal Belum Dimulai", "Belum Mulai")?.gameObject
+                ?? FindSceneObject("Jadwal Belum Dimulai");
             studyScreen ??= FindIn(transform, "Zoom")?.gameObject;
             fastForwardRoot ??= FindIn(studyScreen?.transform, "FastForward Animation")?.gameObject;
             confirmStudyButton ??= EnsureButton(FindIn(confirmationScreen?.transform, "Bimbel Button"));
             backButton ??= EnsureButton(FindIn(confirmationScreen?.transform, "Kembali Button"));
             BindCloseButton(unavailableScreen);
             BindCloseButton(missedScheduleScreen);
-            ResolveSequentialVisuals();
+            BindCloseButton(notStartedScreen);
+            ResolveParticipantVisuals();
         }
 
         void BindButtons()
@@ -202,8 +284,8 @@ namespace IntegratedApps
             }
             if (backButton != null)
             {
-                backButton.onClick.RemoveListener(ShowDesktop);
-                backButton.onClick.AddListener(ShowDesktop);
+                backButton.onClick.RemoveListener(CloseTopmostPanel);
+                backButton.onClick.AddListener(CloseTopmostPanel);
             }
         }
 
@@ -212,12 +294,13 @@ namespace IntegratedApps
             value = Mathf.Clamp01(value);
             if (progressFill != null)
                 progressFill.fillAmount = value;
-            int visibleCount = Mathf.CeilToInt(value * sequentialParticipants.Count);
-            for (int i = 0; i < sequentialParticipants.Count; i++)
-                SetActive(sequentialParticipants[i], i < visibleCount);
+
+            // Peserta tidak lagi muncul bertahap; seluruhnya sudah dinyalakan
+            // sekali saat panel meeting aktif lewat ShowAllParticipants().
             if (fastForwardFrames.Count > 0 && IsStudying)
             {
-                int frame = Mathf.FloorToInt(Time.unscaledTime * 7f) % fastForwardFrames.Count;
+                int frame = Mathf.FloorToInt(Time.unscaledTime * fastForwardFramesPerSecond)
+                            % fastForwardFrames.Count;
                 for (int i = 0; i < fastForwardFrames.Count; i++)
                     SetActive(fastForwardFrames[i], i == frame);
             }
@@ -232,11 +315,15 @@ namespace IntegratedApps
 
         bool IsScheduledToday()
         {
-            if (gameClock == null)
+            if (gameClock == null || scheduleDays == null)
                 return false;
             System.DateTime date = gameClock.CurrentDate;
-            return date.Year == 2026 && date.Month == 8 &&
-                   (date.Day == 3 || date.Day == 5 || date.Day == 6 || date.Day == 8);
+            if (date.Month != 8)
+                return false;
+            foreach (int day in scheduleDays)
+                if (day == date.Day)
+                    return true;
+            return false;
         }
 
         bool AlreadyStudiedToday()
@@ -258,30 +345,81 @@ namespace IntegratedApps
             SetActive(confirmationScreen, false);
             SetActive(unavailableScreen, false);
             SetActive(missedScheduleScreen, false);
+            SetActive(notStartedScreen, false);
             SetActive(studyScreen, false);
             SetActive(fastForwardRoot, false);
         }
 
-        void ResolveSequentialVisuals()
+        void ResolveParticipantVisuals()
         {
-            sequentialParticipants.Clear();
+            participants.Clear();
             Transform panel = FindIn(studyScreen?.transform, "Panel");
             if (panel != null)
-                sequentialParticipants.AddRange(panel.Cast<Transform>()
+                participants.AddRange(panel.Cast<Transform>()
                     .Where(child => child.name.StartsWith("Peserta", System.StringComparison.OrdinalIgnoreCase))
                     .Select(child => child.gameObject));
             fastForwardFrames.Clear();
             if (fastForwardRoot != null)
                 fastForwardFrames.AddRange(fastForwardRoot.transform.Cast<Transform>()
                     .Select(child => child.gameObject));
+
+            originalAnimatorSpeeds.Clear();
+            if (studyScreen != null)
+            {
+                foreach (Animator animator in studyScreen.GetComponentsInChildren<Animator>(true))
+                    originalAnimatorSpeeds[animator] = animator.speed;
+            }
         }
 
-        void ResetSequentialVisuals()
+        void SetMeetingAnimatorSpeed(float multiplier)
         {
-            foreach (GameObject participant in sequentialParticipants)
+            foreach (KeyValuePair<Animator, float> entry in originalAnimatorSpeeds)
+                if (entry.Key != null)
+                    entry.Key.speed = entry.Value * multiplier;
+        }
+
+        void RestoreMeetingAnimatorSpeed()
+        {
+            foreach (KeyValuePair<Animator, float> entry in originalAnimatorSpeeds)
+                if (entry.Key != null)
+                    entry.Key.speed = entry.Value;
+        }
+
+        /// <summary>
+        /// Seluruh peserta langsung tampil begitu panel meeting aktif, tanpa
+        /// kemunculan bertahap. Objek pesertanya tetap yang sudah ada di prefab.
+        /// </summary>
+        void ShowAllParticipants()
+        {
+            foreach (GameObject participant in participants)
+                SetActive(participant, true);
+            for (int i = 0; i < fastForwardFrames.Count; i++)
+                SetActive(fastForwardFrames[i], i == 0);
+        }
+
+        /// <summary>
+        /// Mengembalikan panel meeting ke kondisi awal supaya siap dipakai lagi
+        /// pada jadwal berikutnya.
+        /// </summary>
+        void ResetMeetingPanel()
+        {
+            RestoreClockPlayback();
+            RestoreMeetingAnimatorSpeed();
+            foreach (GameObject participant in participants)
                 SetActive(participant, false);
             for (int i = 0; i < fastForwardFrames.Count; i++)
                 SetActive(fastForwardFrames[i], i == 0);
+            if (progressFill != null)
+                progressFill.fillAmount = 0f;
+        }
+
+        void RestoreClockPlayback()
+        {
+            if (!clockPlaybackCaptured)
+                return;
+            if (gameClock != null)
+                gameClock.runAutomatically = clockWasRunning;
+            clockPlaybackCaptured = false;
         }
 
         void BindCloseButton(GameObject screen)
@@ -289,8 +427,8 @@ namespace IntegratedApps
             Button button = EnsureButton(FindIn(screen?.transform, "Kembali Button", "KembaliBOX"));
             if (button == null)
                 return;
-            button.onClick.RemoveListener(ShowDesktop);
-            button.onClick.AddListener(ShowDesktop);
+            button.onClick.RemoveListener(CloseTopmostPanel);
+            button.onClick.AddListener(CloseTopmostPanel);
         }
 
         static GameObject FindSceneObject(string objectName)

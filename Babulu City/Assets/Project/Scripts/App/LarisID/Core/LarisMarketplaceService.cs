@@ -23,6 +23,12 @@ namespace LarisID
         public int FamousTierRequirement { get; }
         public StorePriceTier StoreTier { get; private set; }
 
+        /// <summary>
+        /// Pengatur ramai-sepinya pembeli. Diisi LarisIDManager dari Inspector;
+        /// bila kosong dipakai nilai default agar service tetap bisa dites sendiri.
+        /// </summary>
+        public LarisMarketTuning Tuning { get; set; } = new LarisMarketTuning();
+
         readonly List<LarisProduct> products = new();
         readonly List<DailyMarketResult> dailyHistory = new();
         int nextProductId;
@@ -328,7 +334,8 @@ namespace LarisID
             };
 
             var random = new System.Random(7391 + simulatedDay * 997 + products.Count * 37);
-            int remainingStoreSales = GetDailyStoreSalesCap(simulatedDay);
+            LarisMarketTuning tuning = Tuning ??= new LarisMarketTuning();
+            int remainingStoreSales = tuning.GetDailyStoreSalesCap(simulatedDay);
             foreach (LarisProduct product in products)
             {
                 ProductDayResult productResult = LarisMarketSimulator.SimulateProduct(
@@ -339,7 +346,8 @@ namespace LarisID
                     ActiveTrend,
                     StoreTier,
                     remainingStoreSales,
-                    random);
+                    random,
+                    tuning);
 
                 if (product.status != ProductStatus.Active)
                     continue;
@@ -445,16 +453,6 @@ namespace LarisID
             // Save lama mungkin belum menyimpan counter ID.
             if (products.Count >= nextProductId)
                 nextProductId = products.Count + 1;
-        }
-
-        // Kapasitas berlaku untuk seluruh toko, bukan untuk setiap produk.
-        // Progress awal sengaja pelan agar pemain tidak langsung kaya.
-        public static int GetDailyStoreSalesCap(int day)
-        {
-            if (day <= 7) return 3;
-            if (day <= 14) return 5;
-            if (day <= 30) return 8;
-            return 12;
         }
 
         void UpdateStoreTier()

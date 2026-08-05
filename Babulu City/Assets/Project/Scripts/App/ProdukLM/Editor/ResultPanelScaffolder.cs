@@ -10,7 +10,7 @@ namespace ProdukLM.Editor
     [InitializeOnLoad]
     public static class ResultPanelScaffolder
     {
-        const string ScenePath = "Assets/Project/Scenes/ProdukLM Test.unity";
+        const string ScenePath = "Assets/Project/Scenes/ProdukLM_LarisID_Test.unity";
         const string ResultPanelName = "Result Panel";
         const string ScreenRootName = "ResultScreenRoot";
         const string TemplatePrefabPath = "Assets/Project/Prefabs/UI/ProdukLMResultPanelTemplate.prefab";

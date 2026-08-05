@@ -13,8 +13,12 @@ namespace LarisID
             ProductCategory activeTrend,
             StorePriceTier storeTier,
             int maximumSales,
-            System.Random random)
+            System.Random random,
+            LarisMarketTuning tuning = null)
         {
+            tuning ??= new LarisMarketTuning();
+            float dayMood = tuning.GetDayMoodMultiplier(day);
+
             var result = new ProductDayResult
             {
                 productId = product.id,
@@ -41,13 +45,16 @@ namespace LarisID
                     300) / 100f;
 
             baseReach *= Mathf.Lerp(0.82f, 1.18f, (float)random.NextDouble());
+            // Suasana pasar harian membuat ada hari sepi dan hari ramai.
+            baseReach *= tuning.reachMultiplier * dayMood;
             int impressions = Mathf.Max(0, Mathf.RoundToInt(baseReach));
 
             float clickChance =
                 0.04f +
                 product.aesthetic / 100f * 0.20f +
                 product.creativity / 100f * 0.08f;
-            clickChance = Mathf.Clamp(clickChance, 0.03f, 0.38f);
+            clickChance *= tuning.clickMultiplier;
+            clickChance = Mathf.Clamp(clickChance, 0.03f, 0.45f);
             int clicks = RollCount(impressions, clickChance, random);
 
             float conversionChance =
@@ -58,7 +65,8 @@ namespace LarisID
             conversionChance *= LarisPricing.GetPurchaseMultiplier(product, storeTier);
             if (product.category == activeTrend)
                 conversionChance *= 1.08f;
-            conversionChance = Mathf.Clamp(conversionChance, 0.005f, 0.35f);
+            conversionChance *= tuning.conversionMultiplier;
+            conversionChance = Mathf.Clamp(conversionChance, 0.005f, 0.42f);
 
             int sales = Mathf.Min(
                 Mathf.Max(0, maximumSales),
