@@ -1,6 +1,6 @@
 <div align="center">
 
-# BRIDA — Babulu City
+# BRIDA — Ventra
 
 ### Belajar membangun produk digital melalui simulasi bisnis yang interaktif.
 
@@ -23,7 +23,7 @@
 
 ## Tentang Game
 
-**BRIDA — Babulu City** adalah game edukasi berbasis simulasi yang mengajak pemain mempelajari proses membangun bisnis produk digital.
+**BRIDA — Ventra** adalah game edukasi berbasis simulasi yang mengajak pemain mempelajari proses membangun bisnis produk digital.
 
 Pemain tidak hanya membuat sebuah produk, tetapi juga harus menentukan konsep yang tepat, memahami target pasar, menetapkan harga, melakukan promosi, membaca performa penjualan, dan mengembangkan reputasi toko.
 
@@ -117,6 +117,8 @@ flowchart LR
 
 6. Tekan **Play** untuk menjalankan simulasi.
 
+> Nama produk sudah berganti menjadi **Ventra**, tetapi folder project Unity di disk masih bernama `Babulu City`. Path pada dokumen ini sengaja ditulis apa adanya agar tetap bisa diikuti.
+
 ## Struktur Singkat
 
 ```text
@@ -161,7 +163,7 @@ Project ini dikerjakan bersama oleh:
 
 <div align="center">
 
-**BRIDA — Babulu City**
+**BRIDA — Ventra**
 
 *Made by Man Insan Cendekia Students*
 
